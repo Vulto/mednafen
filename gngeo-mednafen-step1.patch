@@ -1,0 +1,65 @@
+--- a/configure.ac	2024-04-05 02:27:32.000000000 +0000
++++ b/configure.ac	2026-09-15 04:01:08.316122774 +0000
+@@ -292,6 +292,7 @@
+ AM_CONDITIONAL(WANT_NES_EMU, false)
+ AM_CONDITIONAL(WANT_NES_NEW_EMU, false)
+ AM_CONDITIONAL(WANT_NGP_EMU, false)
++AM_CONDITIONAL(WANT_GNGEO_EMU, false)
+ AM_CONDITIONAL(WANT_PCE_EMU, false)
+ AM_CONDITIONAL(WANT_PCE_FAST_EMU, false)
+ AM_CONDITIONAL(WANT_PCFX_EMU, false)
+@@ -404,6 +405,19 @@
+ 		AM_CONDITIONAL(NEED_BLIP_BUFFER, true)
+ fi
+ 
++AC_ARG_ENABLE(gngeo,
++ AC_HELP_STRING([--enable-gngeo], [build with Neo Geo arcade emulation [[default=no]]]),
++                  , enable_gngeo=no)
++
++if test x$enable_gngeo = xyes; then
++                AC_DEFINE([WANT_GNGEO_EMU], [1], [Define if we are compiling with GnGeo Neo Geo arcade emulation.])
++		AM_CONDITIONAL(WANT_GNGEO_EMU, true)
++		AM_CONDITIONAL(NEED_68K_EMU, true)
++		AM_CONDITIONAL(NEED_Z80_EMU, true)
++		AM_CONDITIONAL(NEED_BLIP_BUFFER, true)
++fi
++
++
+ AC_ARG_ENABLE(pce,
+  AC_HELP_STRING([--enable-pce], [build with PC Engine(TurboGrafx 16) emulation [[default=yes]]]),
+                   , enable_pce=yes)
+--- a/src/Makefile.am	2024-04-05 02:27:32.000000000 +0000
++++ b/src/Makefile.am	2026-09-15 04:00:59.744313484 +0000
+@@ -83,6 +83,10 @@
+ include ngp/Makefile.am.inc
+ endif
+ 
++if WANT_GNGEO_EMU
++include gngeo/Makefile.am.inc
++endif
++
+ if WANT_PCE_EMU
+ include pce/Makefile.am.inc
+ endif
+--- a/src/mednafen.cpp	2024-04-05 02:27:32.000000000 +0000
++++ b/src/mednafen.cpp	2026-09-15 04:02:42.265976371 +0000
+@@ -518,6 +518,9 @@
+ #ifdef WANT_NGP_EMU
+ MDFN_HIDE extern const Mednafen::MDFNGI EmulatedNGP;
+ #endif
++#ifdef WANT_GNGEO_EMU
++MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo;
++#endif
+ 
+ #ifdef WANT_PCE_EMU
+ MDFN_HIDE extern const Mednafen::MDFNGI EmulatedPCE;
+@@ -1512,6 +1515,9 @@
+    #ifdef WANT_NGP_EMU
+    &EmulatedNGP,
+    #endif
++   #ifdef WANT_GNGEO_EMU
++   &EmulatedGnGeo,
++   #endif
+ 
+    #ifdef WANT_PSX_EMU
+    &EmulatedPSX,
