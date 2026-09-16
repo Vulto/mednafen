@@ -17,8 +17,8 @@ typedef uint32_t Uint32;
 #define REGION_MAIN_CPU_BIOS         7
 #define REGION_MAIN_CPU_CARTRIDGE    8
 #define REGION_SPRITES               9
-#define REGION_SPR_USAGE             10
-#define REGION_GAME_FIX_USAGE        11
+#define REGION_SPR_USAGE              10
+#define REGION_GAME_FIX_USAGE         11
 
 #define HAS_CUSTOM_CPU_BIOS   0x1
 #define HAS_CUSTOM_AUDIO_BIOS 0x2
@@ -49,7 +49,7 @@ typedef struct ROM_DEF {
 
     struct romfile {
         char filename[32];
-        Uint32 region;
+        Uint8 region;
         Uint32 src;
         Uint32 dest;
         Uint32 size;
