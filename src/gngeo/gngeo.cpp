@@ -3,6 +3,7 @@
 #include "gngeo_memory.h"
 #include "gngeo_bios.h"
 #include "../compress/ArchiveReader.h"
+#include "../general.h"
 
 namespace Mednafen
 {
