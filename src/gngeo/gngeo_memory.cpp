@@ -44,13 +44,19 @@ static uint16 ReadRom16(const ROM_REGION &region, uint32 offset)
 	return (uint16(ReadRom8(region, offset)) << 8) | ReadRom8(region, offset + 1);
 }
 
+static uint16 ReadVideoRamWord(uint16 pointer)
+{
+	uint32 offset = (uint32(pointer & 0x7fff) << 1);
+	return (uint16(VideoRam[offset]) << 8) | VideoRam[offset + 1];
+}
+
 static void WriteRam16(uint8 *ram, uint32 offset, uint16 value)
 {
 	ram[offset & 0xffff] = value >> 8;
 	ram[(offset + 1) & 0xffff] = value;
 }
 
-static uint16 ReadVideoWord(uint32 address)
+static uint16 ReadVideoRegister(uint32 address)
 {
 	switch(address & 0x0f)
 	{
@@ -73,14 +79,14 @@ static void WriteVideoWord(uint32 address, uint16 value)
 	{
 		case 0x00:
 			VideoPointer = value;
-			VideoReadBuffer = ReadVideoWord(VideoPointer << 1);
+			VideoReadBuffer = ReadVideoRamWord(VideoPointer);
 			break;
 
 		case 0x02:
-			WriteRam16(VideoRam, VideoPointer << 1, value);
+			WriteRam16(VideoRam, uint32(VideoPointer & 0x7fff) << 1, value);
 			VideoPointer = (VideoPointer & 0x8000) |
 				((VideoPointer + VideoModulo) & 0x7fff);
-			VideoReadBuffer = ReadVideoWord(VideoPointer << 1);
+			VideoReadBuffer = ReadVideoRamWord(VideoPointer);
 			break;
 
 		case 0x04:
@@ -146,9 +152,10 @@ static uint8 Read8(uint32 address)
 			return 0;
 
 		case 0x3c0000:
-			if(address & 1)
-				return ReadVideoWord(address - 1);
-			return ReadVideoWord(address) >> 8;
+		{
+			uint16 value = ReadVideoRegister(address & ~1);
+			return (address & 1) ? uint8(value) : uint8(value >> 8);
+		}
 	}
 
 	if((address & 0xffe000) == 0x400000)
@@ -168,6 +175,8 @@ static uint8 Read8(uint32 address)
 
 static uint16 Read16(uint32 address)
 {
+	if((address & 0x00f00000) == 0x003c0000)
+		return ReadVideoRegister(address);
 	return (uint16(Read8(address)) << 8) | Read8(address + 1);
 }
 
@@ -226,7 +235,7 @@ static void Write8(uint32 address, uint8 value)
 
 	if((address & 0xfff000) == 0x3c0000)
 	{
-		uint16 old = ReadVideoWord(address & ~1);
+		uint16 old = ReadVideoRegister(address & ~1);
 		uint16 value16 = (address & 1) ? uint16((old & 0xff00) | value) : uint16((uint16(value) << 8) | (old & 0xff));
 		WriteVideoWord(address & ~1, value16);
 		return;
