@@ -1,11 +1,13 @@
 #include <mednafen/mednafen.h>
+#include "../src/git.h"
+#include "../general.h"
 #include "../compress/ArchiveReader.h"
 #include "gngeo_bios.h"
 
 namespace Mednafen
 {
 
-static Uint8 *GnGeoLoBios = nullptr;
+static uint8 *GnGeoLoBios = nullptr;
 static size_t GnGeoLoBiosSize = 0;
 
 bool GnGeoLoadBiosLo(GameFile *gf)
@@ -36,7 +38,7 @@ bool GnGeoLoadBiosLo(GameFile *gf)
         return false;
 
     GnGeoLoBiosSize = (size_t)stream->size();
-    GnGeoLoBios = (Uint8 *)malloc(GnGeoLoBiosSize);
+    GnGeoLoBios = (uint8 *)malloc(GnGeoLoBiosSize);
 
     if(!GnGeoLoBios)
     {
