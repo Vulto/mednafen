@@ -49,7 +49,7 @@ typedef struct ROM_DEF {
 
     struct romfile {
         char filename[32];
-        Uint8 region;
+        Uint32 region;
         Uint32 src;
         Uint32 dest;
         Uint32 size;
