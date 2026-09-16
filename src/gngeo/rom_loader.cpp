@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zlib.h>
 
 #include "rom_loader.h"
 
@@ -215,6 +216,83 @@ static bool GnGeoConvertAllChar(GAME_ROMS *roms)
     return true;
 }
 
+static std::unique_ptr<Mednafen::Stream> GnGeoOpenRom(
+    Mednafen::ArchiveReader *archive,
+    Uint32 expected_crc,
+    const char *filename)
+{
+    if(archive == nullptr)
+        return nullptr;
+
+    auto CheckCrc = [](Mednafen::Stream *stream, Uint32 expected) -> bool
+    {
+        Uint8 buffer[LOAD_BUF_SIZE];
+        uLong crc = crc32(0L, Z_NULL, 0);
+        uint64 remaining = stream->size();
+
+        try
+        {
+            stream->seek(0, SEEK_SET);
+
+            while(remaining != 0)
+            {
+                uint64 chunk = remaining;
+
+                if(chunk > sizeof(buffer))
+                    chunk = sizeof(buffer);
+
+                if(stream->read(buffer, chunk) != chunk)
+                    return false;
+
+                crc = crc32(crc, buffer, (uInt)chunk);
+                remaining -= chunk;
+            }
+
+            stream->seek(0, SEEK_SET);
+        }
+        catch(const Mednafen::MDFN_Error&)
+        {
+            return false;
+        }
+
+        return (Uint32)crc == expected;
+    };
+
+    if(filename != nullptr)
+    {
+        try
+        {
+            std::unique_ptr<Mednafen::Stream> stream(
+                archive->open(filename, Mednafen::VirtualFS::MODE_READ));
+
+            if(stream && CheckCrc(stream.get(), expected_crc))
+                return stream;
+        }
+        catch(const Mednafen::MDFN_Error&)
+        {
+        }
+    }
+
+    for(size_t i = 0; i < archive->num_files(); i++)
+    {
+        if(archive->get_file_size(i) == 0)
+            continue;
+
+        try
+        {
+            std::unique_ptr<Mednafen::Stream> stream(archive->open(i));
+
+            if(stream && CheckCrc(stream.get(), expected_crc))
+                return stream;
+        }
+        catch(const Mednafen::MDFN_Error&)
+        {
+        }
+    }
+
+    return nullptr;
+}
+
 static bool GnGeoLoadRegion(Mednafen::ArchiveReader *archive,
                             GAME_ROMS *roms,
                             int region,
@@ -224,22 +302,14 @@ static bool GnGeoLoadRegion(Mednafen::ArchiveReader *archive,
                             Uint32 crc,
                             const char *filename)
 {
-    (void)crc;
-
     if(archive == nullptr || filename == nullptr)
         return false;
 
-    std::unique_ptr<Mednafen::Stream> stream;
+    std::unique_ptr<Mednafen::Stream> stream =
+        GnGeoOpenRom(archive, crc, filename);
 
-    try
-    {
-        stream.reset(
-            archive->open(filename, Mednafen::VirtualFS::MODE_READ));
-    }
-    catch(const Mednafen::MDFN_Error&)
-    {
+    if(!stream)
         return false;
-    }
 
     if(src != 0)
     {
