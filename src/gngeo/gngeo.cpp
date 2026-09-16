@@ -1,6 +1,7 @@
 #include "gngeo.h"
 #include "rom_loader.h"
 #include "gngeo_memory.h"
+#include "gngeo_bios.h"
 
 namespace Mednafen
 {
@@ -23,12 +24,14 @@ namespace Mednafen
 			memset(&GameRoms, 0, sizeof(GameRoms));
 			if(!Mednafen::GnGeoLoadRomSet(gf, &GameRoms, SYS_ARCADE, CTY_EUROPE))
 				throw MDFN_Error(0, gettext_noop("Unable to load GnGeo ROM set."));
+			if(!Mednafen::GnGeoLoadBiosLo(gf))
+				throw MDFN_Error(0, gettext_noop("Unable to load GnGeo 000-lo.lo BIOS."));
 			if(!GnGeoMemoryInit(&GameRoms))
 				throw MDFN_Error(0, gettext_noop("Unable to initialize GnGeo 68000 memory."));
 		}
 
 		static bool TestMagic(Mednafen::GameFile *gf) { (void)gf; return false; }
-		static void CloseGame(void) { GnGeoMemoryClose(); }
+		static void CloseGame(void) { GnGeoMemoryClose(); GnGeoFreeBiosLo(); }
 		static void StateAction(Mednafen::StateMem *sm, const unsigned load, const bool data_only)
 		{ (void)sm; (void)load; (void)data_only; }
 		static void Emulate(Mednafen::EmulateSpecStruct *espec) { (void)espec; }
