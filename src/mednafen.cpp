@@ -518,6 +518,9 @@ MDFN_HIDE extern const Mednafen::MDFNGI EmulatedMD;
 #ifdef WANT_NGP_EMU
 MDFN_HIDE extern const Mednafen::MDFNGI EmulatedNGP;
 #endif
+#ifdef WANT_GNGEO_EMU
+MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo;
+#endif
 
 #ifdef WANT_PCE_EMU
 MDFN_HIDE extern const Mednafen::MDFNGI EmulatedPCE;
@@ -1511,6 +1514,9 @@ bool MDFNI_Init(void)
 
    #ifdef WANT_NGP_EMU
    &EmulatedNGP,
+   #endif
+   #ifdef WANT_GNGEO_EMU
+   &EmulatedGnGeo,
    #endif
 
    #ifdef WANT_PSX_EMU

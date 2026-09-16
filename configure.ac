@@ -20,6 +20,7 @@ AC_PROG_CPP
 AM_PROG_AS
 AM_PROG_CC_C_O
 AC_PROG_CXX
+AC_PROG_RANLIB
 AC_PROG_CXXCPP
 
 AC_LANG_C
@@ -87,7 +88,7 @@ AM_ICONV
 if test "x$am_cv_func_iconv" != "xyes"; then
 	AC_MSG_ERROR([*** iconv not found!])
 fi
-AM_GNU_GETTEXT
+AM_GNU_GETTEXT([external])
 
 AC_SUBST(LIBICONV)
 AC_SUBST(LIBINTL)
@@ -292,6 +293,7 @@ AM_CONDITIONAL(WANT_MD_EMU, false)
 AM_CONDITIONAL(WANT_NES_EMU, false)
 AM_CONDITIONAL(WANT_NES_NEW_EMU, false)
 AM_CONDITIONAL(WANT_NGP_EMU, false)
+AM_CONDITIONAL(WANT_GNGEO_EMU, false)
 AM_CONDITIONAL(WANT_PCE_EMU, false)
 AM_CONDITIONAL(WANT_PCE_FAST_EMU, false)
 AM_CONDITIONAL(WANT_PCFX_EMU, false)
@@ -403,6 +405,19 @@ if test x$enable_ngp = xyes; then
 		AM_CONDITIONAL(NEED_Z80_EMU, true)
 		AM_CONDITIONAL(NEED_BLIP_BUFFER, true)
 fi
+
+AC_ARG_ENABLE(gngeo,
+ AC_HELP_STRING([--enable-gngeo], [build with Neo Geo arcade emulation [[default=no]]]),
+                  , enable_gngeo=no)
+
+if test x$enable_gngeo = xyes; then
+                AC_DEFINE([WANT_GNGEO_EMU], [1], [Define if we are compiling with GnGeo Neo Geo arcade emulation.])
+		AM_CONDITIONAL(WANT_GNGEO_EMU, true)
+		AM_CONDITIONAL(NEED_68K_EMU, true)
+		AM_CONDITIONAL(NEED_Z80_EMU, true)
+		AM_CONDITIONAL(NEED_BLIP_BUFFER, true)
+fi
+
 
 AC_ARG_ENABLE(pce,
  AC_HELP_STRING([--enable-pce], [build with PC Engine(TurboGrafx 16) emulation [[default=yes]]]),
@@ -972,4 +987,4 @@ AC_SUBST([AM_CXXFLAGS], "$ALTIVEC_FLAGS $OPTIMIZER_FLAGS $WARNING_FLAGS $CODEGEN
 AC_SUBST([AM_LDFLAGS], "$NOPICPIE_LDFLAGS")
 
 dnl Output Makefiles
-AC_OUTPUT([Makefile po/Makefile.in intl/Makefile src/Makefile src/drivers/Makefile src/drivers_libxxx/Makefile src/drivers_dos/Makefile src/sexyal/Makefile src/ss/Makefile])
+AC_OUTPUT([Makefile po/Makefile.in src/Makefile src/drivers/Makefile src/drivers_libxxx/Makefile src/drivers_dos/Makefile src/sexyal/Makefile src/ss/Makefile])
