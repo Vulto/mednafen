@@ -1,6 +1,9 @@
 #ifndef MDFN_GNGEO_ROM_TYPES_H
 #define MDFN_GNGEO_ROM_TYPES_H
 
+#ifndef __STDC_LIMIT_MACROS
+#define __STDC_LIMIT_MACROS 1
+#endif
 #include <stdint.h>
 
 typedef uint8_t Uint8;
