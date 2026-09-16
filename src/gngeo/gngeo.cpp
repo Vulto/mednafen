@@ -34,7 +34,12 @@ namespace Mednafen
 		static void CloseGame(void) { GnGeoMemoryClose(); GnGeoFreeBiosLo(); }
 		static void StateAction(Mednafen::StateMem *sm, const unsigned load, const bool data_only)
 		{ (void)sm; (void)load; (void)data_only; }
-		static void Emulate(Mednafen::EmulateSpecStruct *espec) { (void)espec; }
+		static void Emulate(Mednafen::EmulateSpecStruct *espec)
+		{
+			GnGeoMemoryRun(200000);
+			if(espec)
+				espec->MasterCycles = 200000;
+		}
 		static void SetInput(unsigned port, const char *type, uint8 *data)
 		{ (void)port; (void)type; (void)data; }
 		static void DoSimpleCommand(int cmd) { (void)cmd; }
