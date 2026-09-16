@@ -2,6 +2,7 @@
 #include "rom_loader.h"
 #include "gngeo_memory.h"
 #include "gngeo_bios.h"
+#include "../compress/ArchiveReader.h"
 
 namespace Mednafen
 {
@@ -30,7 +31,33 @@ namespace Mednafen
 				throw MDFN_Error(0, gettext_noop("Unable to initialize GnGeo 68000 memory."));
 		}
 
-		static bool TestMagic(Mednafen::GameFile *gf) { (void)gf; return false; }
+		static bool TestMagic(Mednafen::GameFile *gf)
+		{
+			if(gf == nullptr || gf->outside.vfs == nullptr || gf->outside.fbase.empty())
+				return false;
+
+			std::unique_ptr<Mednafen::ArchiveReader> data_archive(
+				Mednafen::ArchiveReader::Open(
+					&Mednafen::NVFS,
+					MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "gngeo_data.zip")));
+
+			if(!data_archive)
+				return false;
+
+			const std::string drv_path = "/rom/" + gf->outside.fbase + ".drv";
+
+			try
+			{
+				std::unique_ptr<Mednafen::Stream> stream(
+					data_archive->open(drv_path, Mednafen::VirtualFS::MODE_READ));
+				return stream != nullptr;
+			}
+			catch(const Mednafen::MDFN_Error&)
+			{
+				return false;
+			}
+		}
+
 		static void CloseGame(void) { GnGeoMemoryClose(); GnGeoFreeBiosLo(); }
 		static void StateAction(Mednafen::StateMem *sm, const unsigned load, const bool data_only)
 		{ (void)sm; (void)load; (void)data_only; }
