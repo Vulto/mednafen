@@ -12,13 +12,18 @@ static size_t GnGeoLoBiosSize = 0;
 
 bool GnGeoLoadBiosLo(GameFile *gf)
 {
-    (void)gf;
     GnGeoFreeBiosLo();
 
     std::unique_ptr<ArchiveReader> archive(
         ArchiveReader::Open(
             &NVFS,
             MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "neogeo.zip")));
+
+    if(!archive && gf && gf->outside.vfs)
+    {
+        std::string path = gf->outside.dir.empty() ? "neogeo.zip" : gf->outside.dir + "/neogeo.zip";
+        archive.reset(ArchiveReader::Open(gf->outside.vfs, path));
+    }
 
     if(!archive)
         return false;
