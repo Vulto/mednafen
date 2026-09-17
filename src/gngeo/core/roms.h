@@ -1,7 +1,7 @@
+#include "gngeo_compat.h"
 /* Roms/Ram driver interface */
 #ifndef H_ROMS
 #define H_ROMS
-
 
 //#include <stdbool.h>
 
@@ -83,3 +83,6 @@ int init_game(char *rom_name);
 int close_game(void);
 
 #endif
+int GnGeoInitRoms(GAME_ROMS *r);
+void convert_all_tile(GAME_ROMS *r);
+void convert_all_char(Uint8 *Ptr, int Taille, Uint8 *usage_ptr);

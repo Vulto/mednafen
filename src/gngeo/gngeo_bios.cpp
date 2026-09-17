@@ -67,4 +67,5 @@ void GnGeoFreeBiosLo(void)
     GnGeoLoBiosSize = 0;
 }
 
+uint8 *GnGeoGetBiosLo(size_t *size) { if(size) *size=GnGeoLoBiosSize; return GnGeoLoBios; }
 }
