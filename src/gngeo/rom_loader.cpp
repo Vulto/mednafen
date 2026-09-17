@@ -240,14 +240,12 @@ static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveRead
     for(size_t i = 0; i < archive->num_files(); i++)
     {
         const std::string *path = archive->get_file_path(i);
-        if(path && (path->size() == strlen(name) || (path->size() == strlen(name) + 1 && (*path)[0] == '/')))
+        if(!path) continue;
+        size_t offset = path->empty() ? 0 : ((*path)[0] == '/' ? 1 : 0);
+        if(path->size() == strlen(name) + offset && !strcmp(path->c_str() + offset, name))
         {
-            const char *p = path->c_str() + (path->at(0) == '/' ? 1 : 0);
-            if(!strcmp(p, name))
-            {
-                try { return std::unique_ptr<Mednafen::Stream>(archive->open(i)); }
-                catch(const Mednafen::MDFN_Error&) { return nullptr; }
-            }
+            try { return std::unique_ptr<Mednafen::Stream>(archive->open(i)); }
+            catch(const Mednafen::MDFN_Error&) { return nullptr; }
         }
     }
     return nullptr;
@@ -332,25 +330,26 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     roms->info.flags = 0;
     if(!roms->info.name || !roms->info.longname) { GnGeoFreeRoms(roms); return false; }
 
-    if(GnGeoAllocateRegion(&roms->cpu_m68k, drv_def.romsize[REGION_MAIN_CPU_CARTRIDGE], REGION_MAIN_CPU_CARTRIDGE) != 0) goto fail;
+    auto Fail = [&]() -> bool { GnGeoFreeRoms(roms); return false; };
+    if(GnGeoAllocateRegion(&roms->cpu_m68k, drv_def.romsize[REGION_MAIN_CPU_CARTRIDGE], REGION_MAIN_CPU_CARTRIDGE) != 0) return Fail();
     if(drv_def.romsize[REGION_AUDIO_CPU_CARTRIDGE] == 0 && drv_def.romsize[REGION_AUDIO_CPU_ENCRYPTED] != 0)
     {
         if(GnGeoAllocateRegion(&roms->cpu_z80c, 0x80000, REGION_AUDIO_CPU_ENCRYPTED) != 0 ||
-           GnGeoAllocateRegion(&roms->cpu_z80, 0x90000, REGION_AUDIO_CPU_CARTRIDGE) != 0) goto fail;
+           GnGeoAllocateRegion(&roms->cpu_z80, 0x90000, REGION_AUDIO_CPU_CARTRIDGE) != 0) return Fail();
     }
-    else if(GnGeoAllocateRegion(&roms->cpu_z80, drv_def.romsize[REGION_AUDIO_CPU_CARTRIDGE], REGION_AUDIO_CPU_CARTRIDGE) != 0) goto fail;
-    if(GnGeoAllocateRegion(&roms->tiles, drv_def.romsize[REGION_SPRITES], REGION_SPRITES) != 0) goto fail;
-    if(GnGeoAllocateRegion(&roms->game_sfix, drv_def.romsize[REGION_FIXED_LAYER_CARTRIDGE], REGION_FIXED_LAYER_CARTRIDGE) != 0) goto fail;
-    if(GnGeoAllocateRegion(&roms->gfix_usage, roms->game_sfix.size >> 5, REGION_GAME_FIX_USAGE) != 0) goto fail;
-    if(GnGeoAllocateRegion(&roms->adpcma, drv_def.romsize[REGION_AUDIO_DATA_1], REGION_AUDIO_DATA_1) != 0) goto fail;
-    if(GnGeoAllocateRegion(&roms->adpcmb, drv_def.romsize[REGION_AUDIO_DATA_2], REGION_AUDIO_DATA_2) != 0) goto fail;
-    if(drv_def.romsize[REGION_MAIN_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_CPU_BIOS; if(GnGeoAllocateRegion(&roms->bios_m68k, drv_def.romsize[REGION_MAIN_CPU_BIOS], REGION_MAIN_CPU_BIOS) != 0) goto fail; }
-    if(drv_def.romsize[REGION_AUDIO_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_AUDIO_BIOS; if(GnGeoAllocateRegion(&roms->bios_audio, drv_def.romsize[REGION_AUDIO_CPU_BIOS], REGION_AUDIO_CPU_BIOS) != 0) goto fail; }
-    if(drv_def.romsize[REGION_FIXED_LAYER_BIOS]) { roms->info.flags |= HAS_CUSTOM_SFIX_BIOS; if(GnGeoAllocateRegion(&roms->bios_sfix, drv_def.romsize[REGION_FIXED_LAYER_BIOS], REGION_FIXED_LAYER_BIOS) != 0) goto fail; }
+    else if(GnGeoAllocateRegion(&roms->cpu_z80, drv_def.romsize[REGION_AUDIO_CPU_CARTRIDGE], REGION_AUDIO_CPU_CARTRIDGE) != 0) return Fail();
+    if(GnGeoAllocateRegion(&roms->tiles, drv_def.romsize[REGION_SPRITES], REGION_SPRITES) != 0) return Fail();
+    if(GnGeoAllocateRegion(&roms->game_sfix, drv_def.romsize[REGION_FIXED_LAYER_CARTRIDGE], REGION_FIXED_LAYER_CARTRIDGE) != 0) return Fail();
+    if(GnGeoAllocateRegion(&roms->gfix_usage, roms->game_sfix.size >> 5, REGION_GAME_FIX_USAGE) != 0) return Fail();
+    if(GnGeoAllocateRegion(&roms->adpcma, drv_def.romsize[REGION_AUDIO_DATA_1], REGION_AUDIO_DATA_1) != 0) return Fail();
+    if(GnGeoAllocateRegion(&roms->adpcmb, drv_def.romsize[REGION_AUDIO_DATA_2], REGION_AUDIO_DATA_2) != 0) return Fail();
+    if(drv_def.romsize[REGION_MAIN_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_CPU_BIOS; if(GnGeoAllocateRegion(&roms->bios_m68k, drv_def.romsize[REGION_MAIN_CPU_BIOS], REGION_MAIN_CPU_BIOS) != 0) return Fail(); }
+    if(drv_def.romsize[REGION_AUDIO_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_AUDIO_BIOS; if(GnGeoAllocateRegion(&roms->bios_audio, drv_def.romsize[REGION_AUDIO_CPU_BIOS], REGION_AUDIO_CPU_BIOS) != 0) return Fail(); }
+    if(drv_def.romsize[REGION_FIXED_LAYER_BIOS]) { roms->info.flags |= HAS_CUSTOM_SFIX_BIOS; if(GnGeoAllocateRegion(&roms->bios_sfix, drv_def.romsize[REGION_FIXED_LAYER_BIOS], REGION_FIXED_LAYER_BIOS) != 0) return Fail(); }
 
     std::string game_path = gf->outside.dir.empty() ? gf->outside.fbase + ".zip" : gf->outside.dir + "/" + gf->outside.fbase + ".zip";
     std::unique_ptr<Mednafen::ArchiveReader> game_archive(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
-    if(!game_archive) goto fail;
+    if(!game_archive) return Fail();
 
     std::unique_ptr<Mednafen::ArchiveReader> parent_archive;
     if(drv_def.parent[0])
@@ -367,18 +366,14 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
         if(r.region != REGION_FIXED_LAYER_BIOS && r.region != REGION_AUDIO_CPU_BIOS && r.region != REGION_MAIN_CPU_BIOS)
         {
             MDFN_printf("GnGeo loader: missing ROM %s (region %u, size %u, CRC %08x)\n", r.filename, r.region, r.size, r.crc);
-            goto fail;
+            return Fail();
         }
     }
 
     if(roms->adpcmb.size == 0) { roms->adpcmb.p = roms->adpcma.p; roms->adpcmb.size = roms->adpcma.size; }
 
-    if(!GnGeoLoadBios(gf, roms, system, country)) goto fail;
-    if(!GnGeoConvertAllTile(roms)) goto fail;
-    if(!GnGeoConvertAllChar(roms)) goto fail;
+    if(!GnGeoLoadBios(gf, roms, system, country)) return Fail();
+    if(!GnGeoConvertAllTile(roms)) return Fail();
+    if(!GnGeoConvertAllChar(roms)) return Fail();
     return true;
-
-fail:
-    GnGeoFreeRoms(roms);
-    return false;
 }
