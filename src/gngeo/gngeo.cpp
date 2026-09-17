@@ -21,57 +21,84 @@ namespace Mednafen
 		};
 		static GAME_ROMS GameRoms;
 
-		static void Load(Mednafen::GameFile *gf)
+		static void DiagnoseRomArchive(Mednafen::GameFile *gf)
 		{
-			memset(&GameRoms, 0, sizeof(GameRoms));
-			if(!Mednafen::GnGeoLoadRomSet(gf, &GameRoms, SYS_ARCADE, CTY_EUROPE))
-				throw MDFN_Error(0, gettext_noop("Unable to load GnGeo ROM set."));
-			if(!Mednafen::GnGeoLoadBiosLo(gf))
-				throw MDFN_Error(0, gettext_noop("Unable to load GnGeo 000-lo.lo BIOS."));
-			if(!GnGeoMemoryInit(&GameRoms))
-				throw MDFN_Error(0, gettext_noop("Unable to initialize GnGeo 68000 memory."));
-		}
+			if(gf == nullptr || gf->outside.vfs == nullptr)
+				return;
 
-		static bool TestMagic(Mednafen::GameFile *gf)
-		{
-			if(gf == nullptr || gf->outside.vfs == nullptr || gf->outside.fbase.empty())
-				return false;
+			std::string game_path = gf->outside.dir.empty()
+				? gf->outside.fbase + ".zip"
+				: gf->outside.dir + "/" + gf->outside.fbase + ".zip";
 
-			std::unique_ptr<Mednafen::ArchiveReader> data_archive(
-				Mednafen::ArchiveReader::Open(
-					&Mednafen::NVFS,
-					MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "gngeo_data.zip")));
+			std::unique_ptr<Mednafen::ArchiveReader> archive(
+				Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
 
-			if(!data_archive)
-				return false;
-
-			const std::string drv_path = "/rom/" + gf->outside.fbase + ".drv";
-
-			try
+			if(!archive)
 			{
-				std::unique_ptr<Mednafen::Stream> stream(
-					data_archive->open(drv_path, Mednafen::VirtualFS::MODE_READ));
-				return stream != nullptr;
+				MDFN_printf("GnGeo loader: unable to open game archive: %s\n", game_path.c_str());
+				return;
 			}
-			catch(const Mednafen::MDFN_Error&)
-			{
-				return false;
-			}
+
+			MDFN_printf("GnGeo loader: game archive contains %zu files\n", archive->num_files());
+			const size_t limit = archive->num_files() < 16 ? archive->num_files() : 16;
+			for(size_t i = 0; i < limit; i++)
+				MDFN_printf("  ROM[%zu]: %s (%llu bytes)\n", i,
+					archive->get_file_path(i)->c_str(),
+					(unsigned long long)archive->get_file_size(i));
 		}
 
-		static void CloseGame(void) { GnGeoMemoryClose(); GnGeoFreeBiosLo(); }
-		static void StateAction(Mednafen::StateMem *sm, const unsigned load, const bool data_only)
-		{ (void)sm; (void)load; (void)data_only; }
-		static void Emulate(Mednafen::EmulateSpecStruct *espec)
+	static void Load(Mednafen::GameFile *gf)
+	{
+		memset(&GameRoms, 0, sizeof(GameRoms));
+		DiagnoseRomArchive(gf);
+		if(!Mednafen::GnGeoLoadRomSet(gf, &GameRoms, SYS_ARCADE, CTY_EUROPE))
+			throw MDFN_Error(0, gettext_noop("Unable to load GnGeo ROM set."));
+		if(!Mednafen::GnGeoLoadBiosLo(gf))
+			throw MDFN_Error(0, gettext_noop("Unable to load GnGeo 000-lo.lo BIOS."));
+		if(!GnGeoMemoryInit(&GameRoms))
+			throw MDFN_Error(0, gettext_noop("Unable to initialize GnGeo 68000 memory."));
+	}
+
+	static bool TestMagic(Mednafen::GameFile *gf)
+	{
+		if(gf == nullptr || gf->outside.vfs == nullptr || gf->outside.fbase.empty())
+			return false;
+
+		std::unique_ptr<Mednafen::ArchiveReader> data_archive(
+			Mednafen::ArchiveReader::Open(
+				&Mednafen::NVFS,
+				MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "gngeo_data.zip")));
+
+		if(!data_archive)
+			return false;
+
+		const std::string drv_path = "/rom/" + gf->outside.fbase + ".drv";
+
+		try
 		{
-			GnGeoMemoryRun(200000);
-			if(espec)
-				espec->MasterCycles = 200000;
+			std::unique_ptr<Mednafen::Stream> stream(
+				data_archive->open(drv_path, Mednafen::VirtualFS::MODE_READ));
+			return stream != nullptr;
 		}
-		static void SetInput(unsigned port, const char *type, uint8 *data)
-		{ (void)port; (void)type; (void)data; }
-		static void DoSimpleCommand(int cmd) { (void)cmd; }
-		static const Mednafen::MDFNSetting GnGeoSettings[] = { { NULL } };
+		catch(const Mednafen::MDFN_Error&)
+		{
+			return false;
+		}
+	}
+
+	static void CloseGame(void) { GnGeoMemoryClose(); GnGeoFreeBiosLo(); }
+	static void StateAction(Mednafen::StateMem *sm, const unsigned load, const bool data_only)
+	{ (void)sm; (void)load; (void)data_only; }
+	static void Emulate(Mednafen::EmulateSpecStruct *espec)
+	{
+		GnGeoMemoryRun(200000);
+		if(espec)
+			espec->MasterCycles = 200000;
+	}
+	static void SetInput(unsigned port, const char *type, uint8 *data)
+	{ (void)port; (void)type; (void)data; }
+	static void DoSimpleCommand(int cmd) { (void)cmd; }
+	static const Mednafen::MDFNSetting GnGeoSettings[] = { { NULL } };
 	}
 }
 
