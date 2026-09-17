@@ -3,158 +3,158 @@
 
 namespace Mednafen
 {
-	namespace MDFN_IEN_GNGEO
-	{
+    namespace MDFN_IEN_GNGEO
+    {
 
-		static const std::vector<Mednafen::InputDeviceInfoStruct> InputDeviceInfo =
-		{
-		};
+        static const std::vector<Mednafen::InputDeviceInfoStruct> InputDeviceInfo =
+        {
+        };
 
-		static const std::vector<Mednafen::InputPortInfoStruct> PortInfo =
-		{
-			{ "builtin", "Built-In", InputDeviceInfo, "" }
-		};
+        static const std::vector<Mednafen::InputPortInfoStruct> PortInfo =
+        {
+            { "builtin", "Built-In", InputDeviceInfo, "" }
+        };
 
-		static const Mednafen::FileExtensionSpecStruct KnownExtensions[] =
-		{
-			{ ".zip", 0, gettext_noop("Neo Geo arcade ROM archive") },
-			{ NULL, 0, NULL }
-		};
-
+        static const Mednafen::FileExtensionSpecStruct KnownExtensions[] =
+        {
+            { ".zip", 0, gettext_noop("Neo Geo arcade ROM archive") },
+            { NULL, 0, NULL }
+        };
 
         static GAME_ROMS GameRoms;
 
-                static void Load(Mednafen::GameFile *gf)
-                {
-                        memset(&GameRoms, 0, sizeof(GameRoms));
+        static void Load(Mednafen::GameFile* gf)
+        {
+            GnGeoFreeRomSet(&GameRoms);
 
-                        if(!Mednafen::GnGeoLoadRomSet(
-                                        gf,
-                                        &GameRoms,
-                                        SYS_ARCADE,
-                                        CTY_EUROPE))
-                        {
-                                throw MDFN_Error(
-                                                0,
-                                                gettext_noop("Unable to load GnGeo ROM set."));
-                        }
-                }
+            if(!GnGeoLoadRomSet(
+                gf,
+                &GameRoms,
+                SYS_ARCADE,
+                CTY_EUROPE))
+            {
+                GnGeoFreeRomSet(&GameRoms);
 
-		static bool TestMagic(Mednafen::GameFile *gf)
-		{
-			(void)gf;
+                throw MDFN_Error(
+                    0,
+                    gettext_noop("Unable to load GnGeo ROM set."));
+            }
+        }
 
-			return false;
-		}
+        static bool TestMagic(Mednafen::GameFile* gf)
+        {
+            return GnGeoTestRomSet(gf);
+        }
 
-		static void CloseGame(void)
-		{
-		}
+        static void CloseGame(void)
+        {
+            GnGeoFreeRomSet(&GameRoms);
+        }
 
-		static void StateAction(Mednafen::StateMem *sm,
-				const unsigned load,
-				const bool data_only)
-		{
-			(void)sm;
-			(void)load;
-			(void)data_only;
-		}
+        static void StateAction(Mednafen::StateMem* sm,
+                                const unsigned load,
+                                const bool data_only)
+        {
+            (void)sm;
+            (void)load;
+            (void)data_only;
+        }
 
-		static void Emulate(Mednafen::EmulateSpecStruct *espec)
-		{
-			(void)espec;
-		}
+        static void Emulate(Mednafen::EmulateSpecStruct* espec)
+        {
+            (void)espec;
+        }
 
-		static void SetInput(unsigned port,
-				const char *type,
-				uint8 *data)
-		{
-			(void)port;
-			(void)type;
-			(void)data;
-		}
+        static void SetInput(unsigned port,
+                             const char* type,
+                             uint8* data)
+        {
+            (void)port;
+            (void)type;
+            (void)data;
+        }
 
-		static void DoSimpleCommand(int cmd)
-		{
-			(void)cmd;
-		}
+        static void DoSimpleCommand(int cmd)
+        {
+            (void)cmd;
+        }
 
-		static const Mednafen::MDFNSetting GnGeoSettings[] =
-		{
-			{ NULL }
-		};
+        static const Mednafen::MDFNSetting GnGeoSettings[] =
+        {
+            { NULL }
+        };
 
-	}
+    }
 }
 
 MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo =
 {
-	"gngeo",
-	"Neo Geo (GnGeo)",
+    "gngeo",
+    "Neo Geo (GnGeo)",
 
-	Mednafen::MDFN_IEN_GNGEO::KnownExtensions,
+    Mednafen::MDFN_IEN_GNGEO::KnownExtensions,
 
-	Mednafen::MODPRIO_INTERNAL_HIGH,
+    Mednafen::MODPRIO_INTERNAL_HIGH,
 
-	NULL,
+    NULL,
 
-	Mednafen::MDFN_IEN_GNGEO::PortInfo,
+    Mednafen::MDFN_IEN_GNGEO::PortInfo,
 
-	NULL,
+    NULL,
 
-	Mednafen::MDFN_IEN_GNGEO::Load,
-	Mednafen::MDFN_IEN_GNGEO::TestMagic,
+    Mednafen::MDFN_IEN_GNGEO::Load,
+    Mednafen::MDFN_IEN_GNGEO::TestMagic,
 
-	NULL,
-	NULL,
+    NULL,
+    NULL,
 
-	Mednafen::MDFN_IEN_GNGEO::CloseGame,
+    Mednafen::MDFN_IEN_GNGEO::CloseGame,
 
-	NULL,
-	NULL,
+    NULL,
+    NULL,
 
-	NULL,
-	NULL,
+    NULL,
+    NULL,
 
-	NULL,
-	0,
+    NULL,
+    0,
 
-	Mednafen::CheatInfo_Empty,
+    Mednafen::CheatInfo_Empty,
 
-	false,
+    false,
 
-	Mednafen::MDFN_IEN_GNGEO::StateAction,
-	Mednafen::MDFN_IEN_GNGEO::Emulate,
+    Mednafen::MDFN_IEN_GNGEO::StateAction,
+    Mednafen::MDFN_IEN_GNGEO::Emulate,
 
-	NULL,
+    NULL,
 
-	Mednafen::MDFN_IEN_GNGEO::SetInput,
+    Mednafen::MDFN_IEN_GNGEO::SetInput,
 
-	NULL,
+    NULL,
 
-	Mednafen::MDFN_IEN_GNGEO::DoSimpleCommand,
+    Mednafen::MDFN_IEN_GNGEO::DoSimpleCommand,
 
-	NULL,
+    NULL,
 
-	Mednafen::MDFN_IEN_GNGEO::GnGeoSettings,
+    Mednafen::MDFN_IEN_GNGEO::GnGeoSettings,
 
-	MDFN_MASTERCLOCK_FIXED(6144000),
+    MDFN_MASTERCLOCK_FIXED(6144000),
 
-	0,
+    0,
 
-	Mednafen::EVFSUPPORT_NONE,
+    Mednafen::EVFSUPPORT_NONE,
 
-	false,
+    false,
 
-	320,
-	224,
-	NULL,
+    320,
+    224,
+    NULL,
 
-	320,
-	224,
+    320,
+    224,
 
-	320,
-	224,
+    320,
+    224,
 
-	2,
+    2,
 };
