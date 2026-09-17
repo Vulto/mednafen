@@ -14,6 +14,10 @@ bool GnGeoLoadRomSet(
     SYSTEM system,
     COUNTRY country);
 
+void GnGeoFreeRomSet(GAME_ROMS* roms);
+
+bool GnGeoTestRomSet(GameFile* gf);
+
 }
 
 #endif
