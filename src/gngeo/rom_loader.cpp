@@ -232,21 +232,25 @@ static bool GnGeoLoadRegion(Mednafen::ArchiveReader *archive, GAME_ROMS *roms, i
     return true;
 }
 
-static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveReader *archive, const char *name)
+static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveReader *archive, const char *name, Uint32 expected_size, Uint32 expected_crc)
 {
     if(!archive) return nullptr;
-    try { return std::unique_ptr<Mednafen::Stream>(archive->open(name, Mednafen::VirtualFS::MODE_READ)); }
+    try
+    {
+        std::unique_ptr<Mednafen::Stream> stream(archive->open(name, Mednafen::VirtualFS::MODE_READ));
+        if(stream && (expected_size == 0 || stream->size() == expected_size) &&
+           (expected_crc == 0 || GnGeoCheckCrc(stream.get(), expected_crc))) return stream;
+    }
     catch(const Mednafen::MDFN_Error&) {}
     for(size_t i = 0; i < archive->num_files(); i++)
     {
-        const std::string *path = archive->get_file_path(i);
-        if(!path) continue;
-        size_t offset = path->empty() ? 0 : ((*path)[0] == '/' ? 1 : 0);
-        if(path->size() == strlen(name) + offset && !strcmp(path->c_str() + offset, name))
+        if(expected_size != 0 && archive->get_file_size(i) != expected_size) continue;
+        try
         {
-            try { return std::unique_ptr<Mednafen::Stream>(archive->open(i)); }
-            catch(const Mednafen::MDFN_Error&) { return nullptr; }
+            std::unique_ptr<Mednafen::Stream> stream(archive->open(i));
+            if(stream && (expected_crc == 0 || GnGeoCheckCrc(stream.get(), expected_crc))) return stream;
         }
+        catch(const Mednafen::MDFN_Error&) {}
     }
     return nullptr;
 }
@@ -258,15 +262,16 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
             Mednafen::MDFN_MakeFName(Mednafen::MDFNMKF_FIRMWARE, 0, "neogeo.zip")));
     if(!bios_archive && gf && gf->outside.vfs)
     {
-        std::string path = gf->outside.dir.empty() ? "neogeo.zip" : gf->outside.dir + "/neogeo.zip";
+        std::string path = gf->outside.dir.empty() ? "neogeo.zip" : gf->outside.dir + "/" + gf->outside.fbase.substr(0, gf->outside.fbase.size()) + ".zip";
+        path = gf->outside.dir.empty() ? "neogeo.zip" : gf->outside.dir + "/neogeo.zip";
         bios_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
     }
     if(!bios_archive) return false;
 
     if(roms->bios_sfix.p == nullptr)
     {
-        std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfx");
-        if(!stream) stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfix");
+        std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfx", 0x20000, 0xc2ea0cfd);
+        if(!stream) stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfix", 0x20000, 0xc2ea0cfd);
         if(!stream) return false;
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_sfix, size, REGION_FIXED_LAYER_BIOS) != 0) return false;
@@ -276,12 +281,13 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
     if(roms->bios_m68k.p == nullptr)
     {
         const char *romfile = "sp-s2.sp1";
-        if(system == SYS_UNIBIOS) romfile = "uni-bios.rom";
-        else if(system == SYS_HOME) romfile = "aes-bios.bin";
-        else if(country == CTY_JAPAN) romfile = "vs-bios.rom";
-        else if(country == CTY_USA) romfile = "usa_2slt.bin";
-        else if(country == CTY_ASIA) romfile = "asia-s3.rom";
-        std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), romfile);
+        Uint32 bios_crc = 0x9036d879;
+        if(system == SYS_UNIBIOS) { romfile = "uni-bios.rom"; bios_crc = 0; }
+        else if(system == SYS_HOME) { romfile = "aes-bios.bin"; bios_crc = 0; }
+        else if(country == CTY_JAPAN) { romfile = "vs-bios.rom"; bios_crc = 0xf0e8f27d; }
+        else if(country == CTY_USA) { romfile = "usa_2slt.bin"; bios_crc = 0xe72943de; }
+        else if(country == CTY_ASIA) { romfile = "asia-s3.rom"; bios_crc = 0x91b64be3; }
+        std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, bios_crc);
         if(!stream) return false;
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_m68k, size, REGION_MAIN_CPU_BIOS) != 0) return false;
@@ -294,16 +300,13 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
 {
     memset(roms, 0, sizeof(*roms));
     if(!gf || !gf->vfs || !gf->outside.vfs) return false;
-
     std::unique_ptr<Mednafen::ArchiveReader> data_archive(
         Mednafen::ArchiveReader::Open(&Mednafen::NVFS,
             MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "gngeo_data.zip")));
     if(!data_archive) return false;
-
     std::string drv_path = "/rom/" + gf->outside.fbase + ".drv";
     std::unique_ptr<Mednafen::Stream> drv(data_archive->open(drv_path, Mednafen::VirtualFS::MODE_READ));
     if(!drv) return false;
-
     ROM_DEF drv_def;
     memset(&drv_def, 0, sizeof(drv_def));
     if(drv->read(drv_def.name, sizeof(drv_def.name)) != sizeof(drv_def.name) ||
@@ -323,19 +326,16 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
            drv->read(&r.size, sizeof(r.size)) != sizeof(r.size) ||
            drv->read(&r.crc, sizeof(r.crc)) != sizeof(r.crc)) return false;
     }
-
     roms->info.name = strdup(drv_def.name);
     roms->info.longname = strdup(drv_def.longname);
     roms->info.year = (int)drv_def.year;
     roms->info.flags = 0;
     if(!roms->info.name || !roms->info.longname) { GnGeoFreeRoms(roms); return false; }
-
     auto Fail = [&]() -> bool { GnGeoFreeRoms(roms); return false; };
     if(GnGeoAllocateRegion(&roms->cpu_m68k, drv_def.romsize[REGION_MAIN_CPU_CARTRIDGE], REGION_MAIN_CPU_CARTRIDGE) != 0) return Fail();
     if(drv_def.romsize[REGION_AUDIO_CPU_CARTRIDGE] == 0 && drv_def.romsize[REGION_AUDIO_CPU_ENCRYPTED] != 0)
     {
-        if(GnGeoAllocateRegion(&roms->cpu_z80c, 0x80000, REGION_AUDIO_CPU_ENCRYPTED) != 0 ||
-           GnGeoAllocateRegion(&roms->cpu_z80, 0x90000, REGION_AUDIO_CPU_CARTRIDGE) != 0) return Fail();
+        if(GnGeoAllocateRegion(&roms->cpu_z80c, 0x80000, REGION_AUDIO_CPU_ENCRYPTED) != 0 || GnGeoAllocateRegion(&roms->cpu_z80, 0x90000, REGION_AUDIO_CPU_CARTRIDGE) != 0) return Fail();
     }
     else if(GnGeoAllocateRegion(&roms->cpu_z80, drv_def.romsize[REGION_AUDIO_CPU_CARTRIDGE], REGION_AUDIO_CPU_CARTRIDGE) != 0) return Fail();
     if(GnGeoAllocateRegion(&roms->tiles, drv_def.romsize[REGION_SPRITES], REGION_SPRITES) != 0) return Fail();
@@ -346,18 +346,15 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(drv_def.romsize[REGION_MAIN_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_CPU_BIOS; if(GnGeoAllocateRegion(&roms->bios_m68k, drv_def.romsize[REGION_MAIN_CPU_BIOS], REGION_MAIN_CPU_BIOS) != 0) return Fail(); }
     if(drv_def.romsize[REGION_AUDIO_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_AUDIO_BIOS; if(GnGeoAllocateRegion(&roms->bios_audio, drv_def.romsize[REGION_AUDIO_CPU_BIOS], REGION_AUDIO_CPU_BIOS) != 0) return Fail(); }
     if(drv_def.romsize[REGION_FIXED_LAYER_BIOS]) { roms->info.flags |= HAS_CUSTOM_SFIX_BIOS; if(GnGeoAllocateRegion(&roms->bios_sfix, drv_def.romsize[REGION_FIXED_LAYER_BIOS], REGION_FIXED_LAYER_BIOS) != 0) return Fail(); }
-
     std::string game_path = gf->outside.dir.empty() ? gf->outside.fbase + ".zip" : gf->outside.dir + "/" + gf->outside.fbase + ".zip";
     std::unique_ptr<Mednafen::ArchiveReader> game_archive(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
     if(!game_archive) return Fail();
-
     std::unique_ptr<Mednafen::ArchiveReader> parent_archive;
     if(drv_def.parent[0])
     {
         std::string parent_path = gf->outside.dir.empty() ? std::string(drv_def.parent) + ".zip" : gf->outside.dir + "/" + std::string(drv_def.parent) + ".zip";
         parent_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, parent_path));
     }
-
     for(unsigned i = 0; i < drv_def.nb_romfile; i++)
     {
         const auto &r = drv_def.rom[i];
@@ -369,9 +366,7 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
             return Fail();
         }
     }
-
     if(roms->adpcmb.size == 0) { roms->adpcmb.p = roms->adpcma.p; roms->adpcmb.size = roms->adpcma.size; }
-
     if(!GnGeoLoadBios(gf, roms, system, country)) return Fail();
     if(!GnGeoConvertAllTile(roms)) return Fail();
     if(!GnGeoConvertAllChar(roms)) return Fail();
