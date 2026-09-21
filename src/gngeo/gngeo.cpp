@@ -10,6 +10,11 @@ extern "C" {
 }
 #include <cstring>
 #include <memory>
+#ifdef GNGEO_CI_BACKTRACE
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 namespace Mednafen { namespace MDFN_IEN_GNGEO {
 static GAME_ROMS GameRoms;
@@ -24,6 +29,15 @@ static const MDFNSetting GnGeoSettings[]={ { NULL } };
 static uint8 *InputP1,*InputP2;
 static std::vector<uint8> StateBlob;
 static unsigned CoinPulseFrames;
+#ifdef GNGEO_CI_BACKTRACE
+static void GnGeoCrashHandler(int sig)
+{
+ void *frames[64];
+ int count=backtrace(frames,64);
+ backtrace_symbols_fd(frames,count,2);
+ _exit(128+sig);
+}
+#endif
 
 static void SetInput(unsigned port,const char *type,uint8 *ptr){ if(!strcmp(type,"gamepad")){ if(port==0) InputP1=ptr; else if(port==1) InputP2=ptr; } }
 
@@ -50,6 +64,9 @@ static void ApplyInput(){
 
 static void Load(GameFile *gf)
 {
+#ifdef GNGEO_CI_BACKTRACE
+ signal(SIGSEGV,GnGeoCrashHandler);
+#endif
  memset(&GameRoms,0,sizeof(GameRoms));
  try
  {
