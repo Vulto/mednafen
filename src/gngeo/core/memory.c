@@ -762,45 +762,46 @@ void mem68k_store_setting_byte(Uint32 addr, Uint8 data) {
 }
 
 void mem68k_store_setting_word(Uint32 addr, Uint16 data) {
-    
-    // printf("mem68k_store_setting_word USED????\n");
-    mem68k_store_setting_byte(addr,data);
-    return;
-    addr &= 0xFFFFFe;
-    if (addr == 0x3a0002) {
-        memcpy(memory.rom.cpu_m68k.p, memory.rom.bios_m68k.p, 0x80);
-    }
+    (void)data;
+    addr &= 0x3fffff;
 
-    if (addr == 0x3a0012) {
+    switch(addr) {
+    case 0x3a0002:
+        memcpy(memory.rom.cpu_m68k.p, memory.rom.bios_m68k.p, 0x80);
+        memory.current_vector = 0;
+        break;
+    case 0x3a0012:
         memcpy(memory.rom.cpu_m68k.p, memory.game_vector, 0x80);
-    }
-    if (addr == 0x3a000a) {
+        memory.current_vector = 1;
+        break;
+    case 0x3a000a:
         current_fix = memory.rom.bios_sfix.p;
         fix_usage = memory.fix_board_usage;
-        return;
-    }
-    if (addr == 0x3a001a) {
+        memory.vid.currentfix = 0;
+        break;
+    case 0x3a001a:
         current_fix = memory.rom.game_sfix.p;
         fix_usage = memory.fix_game_usage;
-        return;
-    }
-    if (addr == 0x3a000c) {
+        memory.vid.currentfix = 1;
+        break;
+    case 0x3a000c:
         sram_lock = 1;
-        return;
-    }
-    if (addr == 0x3a001c) {
+        break;
+    case 0x3a001c:
         sram_lock = 0;
-        return;
-    }
-    if (addr == 0x3a000e) {
+        break;
+    case 0x3a000e:
         current_pal = memory.vid.pal_neo[1];
         current_pc_pal = (Uint32 *) memory.vid.pal_host[1];
-        return;
-    }
-    if (addr == 0x3a001e) {
+        memory.vid.currentpal = 1;
+        break;
+    case 0x3a001e:
         current_pal = memory.vid.pal_neo[0];
         current_pc_pal = (Uint32 *) memory.vid.pal_host[0];
-        return;
+        memory.vid.currentpal = 0;
+        break;
+    default:
+        break;
     }
 }
 
