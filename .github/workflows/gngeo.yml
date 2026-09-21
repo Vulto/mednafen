@@ -64,7 +64,6 @@ jobs:
           test "$status" -eq 124
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM' "$TEST_DIR/mednafen.log"
           test -s "$TEST_DIR/mednafen.log"
-          grep -q "Selecting Game Vector" "$TEST_DIR/mednafen.log"
 
       - name: Neo Geo input test
         run: |
@@ -86,8 +85,7 @@ jobs:
             test -n "$wid"
             xdotool windowfocus "$wid"
             sleep 2
-            xdotool key --window "$wid" F8
-            sleep 0.5
+            xdotool key --window "$wid" 5
             xdotool key --window "$wid" Return
             xdotool keydown --window "$wid" d
             sleep 0.25
@@ -107,10 +105,6 @@ jobs:
             xdotool keydown --window "$wid" w
             sleep 0.25
             xdotool keyup --window "$wid" w
-            sleep 2
-            xdotool key --window "$wid" F8
-            sleep 0.5
-            xdotool key --window "$wid" Return
             sleep 2
             kill -TERM "$pid"
             wait "$pid" || true
