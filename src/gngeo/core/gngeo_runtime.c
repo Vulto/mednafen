@@ -8,6 +8,7 @@
 #include "ym2610/2610intf.h"
 #include "ym2610/ym2610.h"
 #include "state.h"
+#include "roms.h"
 
 CONF conf;
 int frame;
@@ -19,6 +20,7 @@ Uint16 play_buffer[16384];
 static GNG_Surface FrameSurface;
 static Uint16 FramePixels[352*256];
 static int AudioRate=44100;
+static int CoreInitialized=0;
 int Fc=0, LastLine=0, SkipFrame=0, SkipNext=0;
 
 static void GnGeoSoundIrq(int irq)
@@ -62,7 +64,13 @@ void init_neo(void)
  update_all_pal();
  current_pal=memory.vid.pal_neo[0]; current_pc_pal=(Uint32*)memory.vid.pal_host[0];
  current_fix=memory.rom.bios_sfix.p; fix_usage=memory.fix_board_usage;
+ CoreInitialized=1;
  memory.vid.currentpal=0; memory.vid.currentfix=0;
+}
+
+void GnGeoCoreShutdown(void)
+{
+ if(CoreInitialized){ YM2610_sh_stop(); CoreInitialized=0; }
 }
 
 void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo)
@@ -77,7 +85,7 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo)
  conf.system=SYS_ARCADE; conf.country=CTY_EUROPE; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
 }
 
-int GnGeoCoreInitRoms(void) { if(GnGeoInitRoms(&memory.rom)!=0) return -1; convert_all_tile(&memory.rom); convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p); return 0; }
+int GnGeoCoreInitRoms(void) { if(GnGeoInitRoms(&memory.rom)!=0) return -1; convert_all_tile(&memory.rom); convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p); if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage); return 0; }
 
 void GnGeoCoreSetInput(uint8_t p1,uint8_t p2,uint8_t start,uint8_t coin,uint8_t unused) { (void)unused; memory.intern_p1=p1; memory.intern_p2=p2; memory.intern_start=start; memory.intern_coin=coin; }
 
