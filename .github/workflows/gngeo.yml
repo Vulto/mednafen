@@ -74,13 +74,12 @@ jobs:
             SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/input.log" 2>&1 &
             pid=$!
             wid=""
-            for i in $(seq 1 30); do
-              wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
+            for i in $(seq 1 60); do
+              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
             test -n "$wid"
-            xdotool windowactivate "$wid"
             sleep 2
             xdotool key --window "$wid" F8
             xdotool key --window "$wid" Return
