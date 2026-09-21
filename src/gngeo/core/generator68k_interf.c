@@ -1,4 +1,5 @@
 #include "gngeo_compat.h"
+/* Generator 68000 integration. */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -211,4 +212,5 @@ int cpu_68k_getcycle(void)
 
 #include "generator68k/cpu68k.h"
 size_t GnGeo68kStateSize(void) { return sizeof(regs); }
+void GnGeo68kStateSaveLoad(void *p, int load) { if(load) memcpy(&regs,p,sizeof(regs)); else memcpy(p,&regs,sizeof(regs)); }
 void GnGeo68kStateSaveLoad(void *p, int load) { if(load) memcpy(&regs,p,sizeof(regs)); else memcpy(p,&regs,sizeof(regs)); }
