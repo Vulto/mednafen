@@ -79,21 +79,29 @@ jobs:
               test -n "$wid" && break
               sleep 1
             done
+            echo "GNGEO_TEST_WINDOW=$wid"
             test -n "$wid"
+            xdotool windowfocus "$wid"
             sleep 2
             xdotool key --window "$wid" F8
             xdotool key --window "$wid" Return
             xdotool keydown --window "$wid" Right
+            sleep 0.25
             xdotool keyup --window "$wid" Right
             xdotool keydown --window "$wid" z
+            sleep 0.25
             xdotool keyup --window "$wid" z
             xdotool keydown --window "$wid" x
+            sleep 0.25
             xdotool keyup --window "$wid" x
             xdotool keydown --window "$wid" a
+            sleep 0.25
             xdotool keyup --window "$wid" a
             xdotool keydown --window "$wid" s
+            sleep 0.25
             xdotool keyup --window "$wid" s
             xdotool keydown --window "$wid" Up
+            sleep 0.25
             xdotool keyup --window "$wid" Up
             sleep 2
             kill -TERM "$pid"
