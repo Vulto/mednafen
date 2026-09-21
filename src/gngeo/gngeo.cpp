@@ -56,7 +56,7 @@ static bool TestMagic(GameFile *gf)
  Uint32 size = 0;
  return GnGeoFindDriver(gf->outside.fbase.c_str(), &size) != nullptr && size != 0;
 }
-static void CloseGame(){ if(!StateBlob.empty()) StateBlob.clear(); GnGeoFreeRoms(&GameRoms); GnGeoFreeBiosLo(); }
+static void CloseGame(){ GnGeoCoreShutdown(); StateBlob.clear(); GnGeoFreeRoms(&GameRoms); GnGeoFreeBiosLo(); memset(&GameRoms,0,sizeof(GameRoms)); }
 static void Emulate(EmulateSpecStruct *espec){
  ApplyInput(); if(espec->SoundFormatChanged) GnGeoCoreSetAudioRate(espec->SoundRate);
  espec->DisplayRect={0,0,320,224};
@@ -70,7 +70,7 @@ static void Emulate(EmulateSpecStruct *espec){
   GnGeoCoreGetFrame(temp.data(),320);
   for(unsigned y=0;y<224;y++) { uint32 *dst=espec->surface->pix<uint32>()+y*espec->surface->pitchinpix; for(unsigned x=0;x<320;x++){ uint16 p=temp[y*320+x]; uint8 r=(uint8)((p>>11)*255/31),g=(uint8)(((p>>5)&63)*255/63),b=(uint8)((p&31)*255/31); dst[x]=espec->surface->format.MakeColor(r,g,b,255); } }
  }
- unsigned frames=(unsigned)((espec->SoundRate+30)/60); if(frames>espec->SoundBufMaxSize) frames=espec->SoundBufMaxSize; espec->SoundBufSize=GnGeoCoreGenerateAudio(espec->SoundBuf,frames);
+ if(espec->SoundBuf && espec->SoundBufMaxSize > 0 && espec->SoundRate > 0) { unsigned frames=(unsigned)((espec->SoundRate+30)/60); if(frames>(unsigned)espec->SoundBufMaxSize) frames=(unsigned)espec->SoundBufMaxSize; espec->SoundBufSize=GnGeoCoreGenerateAudio(espec->SoundBuf,frames); } else espec->SoundBufSize=0;
  espec->MasterCycles=200000;
 }
 static void StateAction(StateMem *sm,const unsigned load,const bool data_only){
@@ -84,4 +84,4 @@ static void DoSimpleCommand(int cmd){if(cmd==MDFN_MSC_POWER||cmd==MDFN_MSC_RESET
 static void SetLayerEnableMask(uint64 mask){(void)mask;}
 }}
 using namespace Mednafen::MDFN_IEN_GNGEO;
-MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo={"gngeo","Neo Geo (GnGeo)",KnownExtensions,Mednafen::MODPRIO_INTERNAL_HIGH,NULL,PortInfo,NULL,Load,TestMagic,NULL,NULL,CloseGame,SetLayerEnableMask,"",NULL,NULL,NULL,0,Mednafen::CheatInfo_Empty,false,StateAction,Emulate,NULL,SetInput,NULL,DoSimpleCommand,NULL,GnGeoSettings,MDFN_MASTERCLOCK_FIXED(6144000),0,Mednafen::EVFSUPPORT_RGB565,false,320,224,NULL,320,224,320,224,2};
+MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo={"gngeo","Neo Geo (GnGeo)",KnownExtensions,Mednafen::MODPRIO_INTERNAL_HIGH,NULL,PortInfo,NULL,Load,TestMagic,NULL,NULL,CloseGame,SetLayerEnableMask,"",NULL,NULL,NULL,0,Mednafen::CheatInfo_Empty,false,StateAction,Emulate,NULL,SetInput,NULL,DoSimpleCommand,NULL,GnGeoSettings,MDFN_MASTERCLOCK_FIXED(12000000),60 * 65536 * 256,Mednafen::EVFSUPPORT_RGB565,false,320,224,NULL,320,224,320,224,2};
