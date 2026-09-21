@@ -153,117 +153,14 @@ void (*mem68k_store_byte[0x1000]) (Uint32 addr, Uint8 data);
 void (*mem68k_store_word[0x1000]) (Uint32 addr, Uint16 data);
 void (*mem68k_store_long[0x1000]) (Uint32 addr, Uint32 data);
 
-static void swap_memory(Uint8 * mem, Uint32 length)
+static void swap_memory(Uint8 *mem, Uint32 length)
 {
-    int i, j;
-
-    /* swap bytes in each word */
-    for (i = 0; i < length; i += 2) {
-	j = mem[i];
-	mem[i] = mem[i + 1];
-	mem[i + 1] = j;
+    for (Uint32 i = 0; i + 1 < length; i += 2) {
+        Uint8 t = mem[i];
+        mem[i] = mem[i + 1];
+        mem[i + 1] = t;
     }
 }
-
-/*** initialise memory tables ***/
-
-void bankswitcher_init() {
-    mem68k_def[2].fetch_byte=mem68k_fetch_bk_normal_byte;
-    mem68k_def[2].fetch_word=mem68k_fetch_bk_normal_word;
-    mem68k_def[2].fetch_long=mem68k_fetch_bk_normal_long;
-    mem68k_def[2].store_byte=mem68k_store_bk_normal_byte;
-    mem68k_def[2].store_word=mem68k_store_bk_normal_word;
-    mem68k_def[2].store_long=mem68k_store_bk_normal_long;
-}
-
-int mem68k_init(void)
-{
-    int i = 0;
-    int j;
-    bankswitcher_init();
-    do {
-	for (j = mem68k_def[i].start; j <= mem68k_def[i].end; j++) {
-	    mem68k_memptr[j] = mem68k_def[i].memptr;
-	    mem68k_fetch_byte[j] = mem68k_def[i].fetch_byte;
-	    mem68k_fetch_word[j] = mem68k_def[i].fetch_word;
-	    mem68k_fetch_long[j] = mem68k_def[i].fetch_long;
-	    mem68k_store_byte[j] = mem68k_def[i].store_byte;
-	    mem68k_store_word[j] = mem68k_def[i].store_word;
-	    mem68k_store_long[j] = mem68k_def[i].store_long;
-	}
-	i++;
-    }
-    while ((mem68k_def[i].start != 0) || (mem68k_def[i].end != 0));
-    return 0;
-}
-
-/*** memptr routines - called for IPC generation so speed is not vital ***/
-
-Uint8 *mem68k_memptr_bad(Uint32 addr)
-{
-    return memory.rom.cpu_m68k.p;
-}
-
-Uint8 *mem68k_memptr_cpu(Uint32 addr)
-{
-    if (addr < cpu68k_romlen) {
-	return (memory.rom.cpu_m68k.p + addr);
-    }
-    /* We should never reach this point */
-    return memory.rom.cpu_m68k.p;
-}
-
-Uint8 *mem68k_memptr_bios(Uint32 addr)
-{
-    addr &= 0x1FFFF;
-    return (memory.rom.bios_m68k.p + addr);
-}
-
-Uint8 *mem68k_memptr_cpu_bk(Uint32 addr)
-{
-    addr &= 0xFFFFF;
-    //printf("mem68k_memptr_cpu_bk %x %x %d\n",addr,bankaddress,current_cpu_bank);
-    return (memory.rom.cpu_m68k.p + addr + bankaddress);
-}
-
-Uint8 *mem68k_memptr_ram(Uint32 addr)
-{
-    addr &= 0xffff;
-    return (memory.ram + addr);
-}
-
-
-void cpu_68k_bankswitch(Uint32 address)
-{
-
-    bankaddress = address;
-//    current_cpu_bank = data + 1;
-};
-
-void cpu_68k_reset(void)
-{
-    cpu68k_reset();
-}
-
-static Uint32 pc;
-
-
-void cpu_68k_init(void)
-{
-    printf("GEN68k CPU INIT\n");
-    //#ifdef WORDS_BIGENDIAN
-    
-	cpu68k_clearcache();
-
-    {
-		swap_memory(memory.rom.cpu_m68k.p, memory.rom.cpu_m68k.size);
-		if (memory.rom.bios_m68k.p[0]==0x10) {
-			printf("BIOS BYTE1=%08x\n",memory.rom.bios_m68k.p[0]);
-			swap_memory(memory.rom.bios_m68k.p, memory.rom.bios_m68k.size);
-		}
-		swap_memory(memory.game_vector, 0x80);
-    }
-    //#endif
 
     cpu68k_ram = memory.ram;
     cpu68k_rom = memory.rom.cpu_m68k.p;
