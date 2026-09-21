@@ -64,6 +64,14 @@ static const char* const NGPPadConfig[] =
         MKDEF(W), MKDEF(S), MKDEF(A), MKDEF(D), MKDEF(KP_2), MKDEF(KP_3), MKDEF(RETURN)
 };
 
+static const char* const GnGeoPadConfig[] =
+{
+        // Up, down, left, right, A, B, C, D, Start, Select, Coin
+        MKDEF(W), MKDEF(S), MKDEF(A), MKDEF(D),
+        MKDEF(J), MKDEF(K), MKDEF(U), MKDEF(I),
+        MKDEF(RETURN), MKDEF(RSHIFT), MKDEF(5)
+};
+
 static const char* const WSwanPadConfig[] =
 {
         // Up, right, down, left,
@@ -1133,6 +1141,8 @@ const std::map<const char*, DefaultSettingsMeow, cstrcomp> defset =
  DPDC("gb.input.builtin.gamepad", GBPadConfig),
  DPDC("gba.input.builtin.gamepad", GBAPadConfig),
  DPDC("ngp.input.builtin.gamepad", NGPPadConfig),
+ DPDC("gngeo.input.p1.gamepad", GnGeoPadConfig),
+ DPDC("gngeo.input.p2.gamepad", GnGeoPadConfig),
  DPDC("wswan.input.builtin.gamepad", WSwanPadConfig),
  DPDC("wswan.input.builtin.gamepadraa", WSwanPadRAAConfig),
 
