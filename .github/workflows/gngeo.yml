@@ -27,7 +27,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xdotool
+          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xdotool gdb
 
       - name: Prepare autotools
         run: |
@@ -56,11 +56,11 @@ jobs:
           cp "$MEDNAFEN_HOME/firmware/neogeo.zip" "$TEST_DIR/neogeo.zip"
           set +e
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
+            gdb -q -batch -ex run -ex bt --args ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
@@ -71,7 +71,7 @@ jobs:
             sleep 0.5
             xdotool key --window "$wid" Return
             sleep 5
-            kill -TERM "$pid"
+            kill -TERM "$pid" 2>/dev/null || true
             wait "$pid" || true
           '
           set -e
