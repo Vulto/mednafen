@@ -130,8 +130,7 @@ static void DoSimpleCommand(int cmd){
  else if(cmd==MDFN_MSC_INSERT_COIN) CoinPulseFrames=2;
 }
 
-static void SetLayerEnableMask(uint64 mask){(void)mask;}
 }}
 
 using namespace Mednafen::MDFN_IEN_GNGEO;
-MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo={"gngeo","Neo Geo (GnGeo)",KnownExtensions,Mednafen::MODPRIO_INTERNAL_HIGH,NULL,PortInfo,NULL,Load,TestMagic,NULL,NULL,CloseGame,SetLayerEnableMask,"",NULL,NULL,NULL,0,Mednafen::CheatInfo_Empty,false,StateAction,Emulate,NULL,SetInput,NULL,DoSimpleCommand,NULL,GnGeoSettings,MDFN_MASTERCLOCK_FIXED(12000000),60 * 65536 * 256,Mednafen::EVFSUPPORT_RGB565,false,320,224,NULL,320,224,320,224,2};
+MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo={"gngeo","Neo Geo (GnGeo)",KnownExtensions,Mednafen::MODPRIO_INTERNAL_HIGH,NULL,PortInfo,NULL,Load,TestMagic,NULL,NULL,CloseGame,NULL,NULL,NULL,NULL,NULL,0,Mednafen::CheatInfo_Empty,false,StateAction,Emulate,NULL,SetInput,NULL,DoSimpleCommand,NULL,GnGeoSettings,MDFN_MASTERCLOCK_FIXED(12000000),60 * 65536 * 256,Mednafen::EVFSUPPORT_RGB565,false,320,224,NULL,320,224,320,224,2};
