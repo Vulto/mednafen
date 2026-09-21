@@ -54,6 +54,7 @@ jobs:
           test -n "$bios_path"
           test -f "$bios_path"
           cp "$bios_path" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$bios_path" "$RUNNER_TEMP/gngeo-test/neogeo.zip"
           curl -fL --retry 3 -o "$RUNNER_TEMP/gngeo-test/puzzledp.zip" https://raw.githubusercontent.com/PeterLemon/NEO-GEO/master/HelloWorld/puzzledp.zip
           set +e
           timeout --signal=TERM 10s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$RUNNER_TEMP/gngeo-test/puzzledp.zip" >"$RUNNER_TEMP/gngeo-test/mednafen.log" 2>&1
