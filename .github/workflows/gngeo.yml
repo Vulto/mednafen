@@ -69,7 +69,8 @@ jobs:
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-input-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
-          mkdir -p "$MEDNAFEN_HOME"
+          mkdir -p "$MEDNAFEN_HOME/firmware"
+          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           set +e
           xvfb-run -a bash -c '
             SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/input.log" 2>&1 &
@@ -116,7 +117,8 @@ jobs:
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-audio-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
-          mkdir -p "$MEDNAFEN_HOME"
+          mkdir -p "$MEDNAFEN_HOME/firmware"
+          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           set +e
           timeout --signal=TERM 12s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 1 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/audio.log" 2>&1
           status=$?
@@ -130,7 +132,8 @@ jobs:
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-gameplay-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
-          mkdir -p "$MEDNAFEN_HOME"
+          mkdir -p "$MEDNAFEN_HOME/firmware"
+          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           xvfb-run -a bash -c '
             SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/gameplay.log" 2>&1 &
             pid=$!
