@@ -26,6 +26,77 @@ extern Uint8 *cpu68k_ram;
 extern Uint32 reg68k_pc;
 extern t_sr reg68k_sr;
 
+t_mem68k_def mem68k_def[] = {
+ {0x000, 0x0ff, NULL, mem68k_fetch_cpu_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0x100, 0x1ff, NULL, mem68k_fetch_ram_byte, mem68k_fetch_ram_word, mem68k_fetch_ram_long, mem68k_store_ram_byte, mem68k_store_ram_word, mem68k_store_ram_long},
+ {0x200, 0x2ff, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+ {0x300, 0x300, NULL, mem68k_fetch_ctl1_byte, mem68k_fetch_ctl1_word, mem68k_fetch_ctl1_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0x320, 0x320, NULL, mem68k_fetch_coin_byte, mem68k_fetch_coin_word, mem68k_fetch_coin_long, mem68k_store_z80_byte, mem68k_store_z80_word, mem68k_store_z80_long},
+ {0x340, 0x340, NULL, mem68k_fetch_ctl2_byte, mem68k_fetch_ctl2_word, mem68k_fetch_ctl2_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0x380, 0x380, NULL, mem68k_fetch_ctl3_byte, mem68k_fetch_ctl3_word, mem68k_fetch_ctl3_long, mem68k_store_pd4990_byte, mem68k_store_pd4990_word, mem68k_store_pd4990_long},
+ {0x3a0, 0x3a0, NULL, mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long, mem68k_store_setting_byte, mem68k_store_setting_word, mem68k_store_setting_long},
+ {0x3c0, 0x3c0, NULL, mem68k_fetch_video_byte, mem68k_fetch_video_word, mem68k_fetch_video_long, mem68k_store_video_byte, mem68k_store_video_word, mem68k_store_video_long},
+ {0x400, 0x401, NULL, mem68k_fetch_pal_byte, mem68k_fetch_pal_word, mem68k_fetch_pal_long, mem68k_store_pal_byte, mem68k_store_pal_word, mem68k_store_pal_long},
+ {0x800, 0x800, NULL, mem68k_fetch_memcrd_byte, mem68k_fetch_memcrd_word, mem68k_fetch_memcrd_long, mem68k_store_memcrd_byte, mem68k_store_memcrd_word, mem68k_store_memcrd_long},
+ {0xc00, 0xcff, NULL, mem68k_fetch_bios_byte, mem68k_fetch_bios_word, mem68k_fetch_bios_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0xd00, 0xdff, NULL, mem68k_fetch_sram_byte, mem68k_fetch_sram_word, mem68k_fetch_sram_long, mem68k_store_sram_byte, mem68k_store_sram_word, mem68k_store_sram_long},
+ {0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}
+};
+
+Uint8 *(*mem68k_memptr[0x1000])(Uint32);
+Uint8 (*mem68k_fetch_byte[0x1000])(Uint32);
+Uint16 (*mem68k_fetch_word[0x1000])(Uint32);
+Uint32 (*mem68k_fetch_long[0x1000])(Uint32);
+void (*mem68k_store_byte[0x1000])(Uint32, Uint8);
+void (*mem68k_store_word[0x1000])(Uint32, Uint16);
+void (*mem68k_store_long[0x1000])(Uint32, Uint32);
+
+static static Uint8 *mem68k_memptr_bad(Uint32 addr);
+static static Uint8 *mem68k_memptr_cpu(Uint32 addr);
+static static Uint8 *mem68k_memptr_bios(Uint32 addr);
+static static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
+static static Uint8 *mem68k_memptr_ram(Uint32 addr);
+
+static void BankswitcherInit(void)
+{
+ mem68k_def[2].fetch_byte=mem68k_fetch_bk_normal_byte;
+ mem68k_def[2].fetch_word=mem68k_fetch_bk_normal_word;
+ mem68k_def[2].fetch_long=mem68k_fetch_bk_normal_long;
+ mem68k_def[2].store_byte=mem68k_store_bk_normal_byte;
+ mem68k_def[2].store_word=mem68k_store_bk_normal_word;
+ mem68k_def[2].store_long=mem68k_store_bk_normal_long;
+}
+
+int mem68k_init(void)
+{
+ memset(mem68k_memptr,0,sizeof(mem68k_memptr));
+ memset(mem68k_fetch_byte,0,sizeof(mem68k_fetch_byte));
+ memset(mem68k_fetch_word,0,sizeof(mem68k_fetch_word));
+ memset(mem68k_fetch_long,0,sizeof(mem68k_fetch_long));
+ memset(mem68k_store_byte,0,sizeof(mem68k_store_byte));
+ memset(mem68k_store_word,0,sizeof(mem68k_store_word));
+ memset(mem68k_store_long,0,sizeof(mem68k_store_long));
+ BankswitcherInit();
+ for(unsigned i=0; mem68k_def[i].start || mem68k_def[i].end; i++)
+  for(unsigned j=mem68k_def[i].start; j<=mem68k_def[i].end && j<0x1000; j++) {
+   mem68k_memptr[j]=mem68k_def[i].memptr;
+   mem68k_fetch_byte[j]=mem68k_def[i].fetch_byte;
+   mem68k_fetch_word[j]=mem68k_def[i].fetch_word;
+   mem68k_fetch_long[j]=mem68k_def[i].fetch_long;
+   mem68k_store_byte[j]=mem68k_def[i].store_byte;
+   mem68k_store_word[j]=mem68k_def[i].store_word;
+   mem68k_store_long[j]=mem68k_def[i].store_long;
+  }
+ return 0;
+}
+
+static void SwapMemory(Uint8 *mem, Uint32 length)
+{
+ for(Uint32 i=0; i+1<length; i+=2) {
+  Uint8 t=mem[i]; mem[i]=mem[i+1]; mem[i+1]=t;
+ }
+}
+
 Uint8 *mem68k_memptr_bad(Uint32 addr)
 {
     return memory.rom.cpu_m68k.p;
@@ -61,6 +132,24 @@ void cpu_68k_bankswitch(Uint32 address)
 void cpu_68k_reset(void)
 {
     cpu68k_reset();
+}
+
+void cpu_68k_init(void)
+{
+    cpu68k_clearcache();
+#ifndef WORDS_BIGENDIAN
+    SwapMemory(memory.rom.cpu_m68k.p, memory.rom.cpu_m68k.size);
+    if(memory.rom.bios_m68k.p && memory.rom.bios_m68k.size && memory.rom.bios_m68k.p[0] == 0x10)
+        SwapMemory(memory.rom.bios_m68k.p, memory.rom.bios_m68k.size);
+    SwapMemory(memory.game_vector, sizeof(memory.game_vector));
+#endif
+    cpu68k_ram=memory.ram;
+    cpu68k_rom=memory.rom.cpu_m68k.p;
+    cpu68k_romlen=memory.rom.cpu_m68k.size < 0x100000 ? memory.rom.cpu_m68k.size : 0x100000;
+    mem68k_init();
+    cpu68k_init();
+    if(memory.rom.cpu_m68k.size > 0x100000)
+        cpu_68k_bankswitch(0);
 }
 
 int cpu_68k_run(Uint32 nb_cycle)
