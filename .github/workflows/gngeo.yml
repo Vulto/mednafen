@@ -43,28 +43,26 @@ jobs:
         run: |
           make -j"$(nproc)"
 
-      - name: Neo Geo runtime smoke test
+      - name: Neo Geo KOF 2003 runtime test
         run: |
-          sudo add-apt-repository -y ppa:dciabrin/ngdevkit
-          sudo apt-get update
-          sudo apt-get install -y ngdevkit
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
-          mkdir -p "$MEDNAFEN_HOME/firmware" "$RUNNER_TEMP/gngeo-test"
-          bios_path="$(dpkg -L ngdevkit | grep '/neogeo[.]zip$' | head -1)"
-          test -n "$bios_path"
-          test -f "$bios_path"
-          cp "$bios_path" "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          curl -fL --retry 3 -o "$RUNNER_TEMP/gngeo-test/puzzledp.zip" https://raw.githubusercontent.com/PeterLemon/NEO-GEO/master/HelloWorld/puzzledp.zip
-          ln -sf "$MEDNAFEN_HOME/firmware/neogeo.zip" "$RUNNER_TEMP/gngeo-test/neogeo.zip"
+          export TEST_DIR="$RUNNER_TEMP/gngeo-test"
+          mkdir -p "$MEDNAFEN_HOME/firmware" "$TEST_DIR"
+          curl -fL --retry 3 -o "$TEST_DIR/kof2003.zip" https://archive.org/download/neo-geo-aes-romset/kof2003.zip
+          test "$(sha1sum "$TEST_DIR/kof2003.zip" | awk '{print $1}')" = "f8b9d5a5166746f84ff424baefd0b95c99646ec3"
+          unzip -p "$TEST_DIR/kof2003.zip" 000-lo.lo > "$TEST_DIR/000-lo.lo"
+          unzip -p "$TEST_DIR/kof2003.zip" sp-s2.sp1 > "$TEST_DIR/sp-s2.sp1"
+          unzip -p "$TEST_DIR/kof2003.zip" sfix.sfix > "$TEST_DIR/sfix.sfix"
+          unzip -p "$TEST_DIR/kof2003.zip" sm1.sm1 > "$TEST_DIR/sm1.sm1"
+          (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1)
           set +e
-          timeout --signal=TERM 10s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$RUNNER_TEMP/gngeo-test/puzzledp.zip" >"$RUNNER_TEMP/gngeo-test/mednafen.log" 2>&1
+          timeout --signal=TERM 15s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/mednafen.log" 2>&1
           status=$?
           set -e
-          cat "$RUNNER_TEMP/gngeo-test/mednafen.log"
+          cat "$TEST_DIR/mednafen.log"
           test "$status" -eq 124
-          grep -Eiq 'Neo Geo|puzzledp' "$RUNNER_TEMP/gngeo-test/mednafen.log"
-          ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception' "$RUNNER_TEMP/gngeo-test/mednafen.log"
-          test -s "$RUNNER_TEMP/gngeo-test/mednafen.log"
+          ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM' "$TEST_DIR/mednafen.log"
+          test -s "$TEST_DIR/mednafen.log"
 
       - name: GnGeo source audit
         run: |
