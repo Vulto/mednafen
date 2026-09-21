@@ -203,6 +203,11 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
     {
         std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfx", 0x20000, 0xc2ea0cfd);
         if(!stream) stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfix", 0x20000, 0xc2ea0cfd);
+        if(!stream && system == SYS_ARCADE && country == CTY_EUROPE)
+        {
+            stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfx", 0x20000, 0);
+            if(!stream) stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfix", 0x20000, 0);
+        }
         if(!stream) return false;
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_sfix, size, REGION_FIXED_LAYER_BIOS) != 0) return false;
