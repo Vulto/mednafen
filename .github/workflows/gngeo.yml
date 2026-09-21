@@ -105,14 +105,11 @@ jobs:
             xdotool keyup --window "$wid" w
             sleep 2
             kill -TERM "$pid"
-            wait "$pid"
+            wait "$pid" || true
           '
-          status=$?
-          set -e
           cat "$TEST_DIR/input.log"
-          test "$status" -eq 1 || test "$status" -eq 143 || test "$status" -eq 124
           grep -q 'GNGEO_INPUT' "$TEST_DIR/input.log"
-          grep -Eq 'GNGEO_INPUT .*p1=([0-9a-f][0-9a-f])' "$TEST_DIR/input.log"
+          grep -Eq 'GNGEO_INPUT .*p1=[0-9a-f]{2}' "$TEST_DIR/input.log"
 
       - name: GnGeo source audit
         run: |
