@@ -43,6 +43,48 @@ jobs:
         run: |
           make -j"$(nproc)"
 
+      - name: Neo Geo runtime smoke test
+        run: |
+          sudo add-apt-repository -y ppa:dciabrin/ngdevkit
+          sudo apt-get update
+          sudo apt-get install -y ngdevkit
+          mkdir -p "$RUNNER_TEMP/mednafen-home/firmware" "$RUNNER_TEMP/gngeo-test"
+          export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
+          bios_path="$(dpkg -L ngdevkit | grep '/neogeo\\.zip        run: |
+          test -f src/gngeo/gngeo.cpp
+          test -f src/gngeo/core/gngeo_runtime.c
+          test -f src/gngeo/core/gngeo_state.c
+          ! grep -RIn --exclude='*.md' -E '#[[:space:]]*include[[:space:]]*[<"]SDL' src/gngeo
+          ! grep -RIn -E 'usage limit|usage_limit|codex.*limit|limit.*codex' .github src/gngeo || true
+
+      - name: Core symbol audit
+        run: |
+          nm src/mednafen 2>/dev/null | grep -E 'EmulatedGnGeo' || true
+          test -f src/gngeo/core/gngeo_runtime.c
+          grep -q 'GnGeoCoreStateSaveLoad' src/gngeo/core/gngeo_state.c
+
+      - name: Package build artifact
+        run: |
+          mkdir -p artifacts
+          cp src/mednafen artifacts/mednafen-gngeo
+          tar -czf artifacts/mednafen-gngeo-build.tar.gz artifacts/mednafen-gngeo
+ | head -1)"
+          test -n "$bios_path"
+          test -f "$bios_path"
+          cp "$bios_path" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          curl -fL --retry 3 -o "$RUNNER_TEMP/gngeo-test/puzzledp.zip" \\
+            https://raw.githubusercontent.com/PeterLemon/NEO-GEO/master/HelloWorld/puzzledp.zip
+          set +e
+          timeout --signal=TERM 10s xvfb-run -a env SDL_AUDIODRIVER=dummy \\
+            ./src/mednafen/mednafen -force_module gngeo -sound 0 \\
+            "$RUNNER_TEMP/gngeo-test/puzzledp.zip" >"$RUNNER_TEMP/gngeo-test/mednafen.log" 2>&1
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/gngeo-test/mednafen.log"
+          test "$status" -eq 124
+          grep -Eiq 'Neo Geo|puzzledp' "$RUNNER_TEMP/gngeo-test/mednafen.log"
+          ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception' "$RUNNER_TEMP/gngeo-test/mednafen.log"
+
       - name: GnGeo source audit
         run: |
           test -f src/gngeo/gngeo.cpp
