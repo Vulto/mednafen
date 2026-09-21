@@ -1,3 +1,19 @@
+void cpu_68k_init(void)
+{
+    printf("GEN68k CPU INIT\n");
+    cpu68k_clearcache();
+    cpu68k_ram = memory.ram;
+    cpu68k_rom = memory.rom.cpu_m68k.p;
+    if (memory.rom.cpu_m68k.size < 0x100000)
+        cpu68k_romlen = memory.rom.cpu_m68k.size;
+    else
+        cpu68k_romlen = 0x100000;
+    mem68k_init();
+    cpu68k_init();
+    if (memory.rom.cpu_m68k.size > 0x100000)
+        cpu_68k_bankswitch(0);
+}
+ 
 #include "gngeo_compat.h"
 /*  gngeo a neogeo emulator
  *  Copyright (C) 2001 Peponas Mathieu
@@ -162,19 +178,6 @@ static void swap_memory(Uint8 *mem, Uint32 length)
     }
 }
 
-    cpu68k_ram = memory.ram;
-    cpu68k_rom = memory.rom.cpu_m68k.p;
-    if (memory.rom.cpu_m68k.size < 0x100000)
-	cpu68k_romlen = memory.rom.cpu_m68k.size;
-    else
-	cpu68k_romlen = 0x100000;
-    mem68k_init();
-    cpu68k_init();
-    if (memory.rom.cpu_m68k.size > 0x100000) {
-	cpu_68k_bankswitch(0);
-    }
-    //cpu_68k_init_save_state();
-}
 
 
 int cpu_68k_run(Uint32 nb_cycle)
