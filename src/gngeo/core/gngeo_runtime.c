@@ -149,7 +149,7 @@ int GnGeoRunFrame(void)
  if(Fc>=neogeo_frame_counter_speed){Fc=0;neogeo_frame_counter++;} Fc++;
 #ifdef GNGEO_CI_FRAME_TRACE
  GnGeoFrameNumber++;
- if((GnGeoFrameNumber%30)==0) printf("GNGEO_FRAME frame=%u hash=%08x\\n",GnGeoFrameNumber,GnGeoFrameHash());
+ if((GnGeoFrameNumber%30)==0) printf("GNGEO_FRAME frame=%u hash=%08x\n",GnGeoFrameNumber,GnGeoFrameHash());
 #endif
  return 1;
 }
