@@ -323,4 +323,4 @@ static const Uint8 C50[]={
 0xc2,0x86,0xf3,0x67,0xba,0x60,0x43,0xc9,0x04,0xb3,0xb0,0x1e,0xb5,0xc8,0xeb,0xa5,
 0x76,0xea,0x5c,0x82,0x1a,0x4f,0xaa,0xca,0xe1,0x0b,0x4e,0xcb,0x6a,0xef,0xd1,0xd6,
 };
-void *GnGeoLoadData(const char*n,Uint32*s){if(!strcmp(n,"rom/cmc42.xor")){if(s)*s=sizeof(C42);return(void*)C42;}if(!strcmp(n,"rom/cmc50.xor")){if(s)*s=sizeof(C50);return(void*)C50;}if(s)*s=0;return NULL;}
+void *GnGeoLoadData(const char*n,Uint32*s){const void *src=NULL;size_t size=0;if(!strcmp(n,"rom/cmc42.xor")){src=C42;size=sizeof(C42);}else if(!strcmp(n,"rom/cmc50.xor")){src=C50;size=sizeof(C50);}else{if(s)*s=0;return NULL;}void *copy=malloc(size);if(!copy){if(s)*s=0;return NULL;}memcpy(copy,src,size);if(s)*s=(Uint32)size;return copy;}
