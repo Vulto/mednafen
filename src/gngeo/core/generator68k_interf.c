@@ -31,6 +31,7 @@ static Uint8 *mem68k_memptr_cpu(Uint32 addr);
 static Uint8 *mem68k_memptr_bios(Uint32 addr);
 static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
 static Uint8 *mem68k_memptr_ram(Uint32 addr);
+int diss68k_getdumpline(uint32 addr68k, uint8 *addr, char *dumpline);
 
 t_mem68k_def mem68k_def[] = {
  {0x000, 0x0ff, NULL, mem68k_fetch_cpu_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
@@ -46,7 +47,7 @@ t_mem68k_def mem68k_def[] = {
  {0x800, 0x800, NULL, mem68k_fetch_memcrd_byte, mem68k_fetch_memcrd_word, mem68k_fetch_memcrd_long, mem68k_store_memcrd_byte, mem68k_store_memcrd_word, mem68k_store_memcrd_long},
  {0xc00, 0xcff, NULL, mem68k_fetch_bios_byte, mem68k_fetch_bios_word, mem68k_fetch_bios_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
  {0xd00, 0xdff, NULL, mem68k_fetch_sram_byte, mem68k_fetch_sram_word, mem68k_fetch_sram_long, mem68k_store_sram_byte, mem68k_store_sram_word, mem68k_store_sram_long},
- {0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}
+ {0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL}
 };
 
 Uint8 *(*mem68k_memptr[0x1000])(Uint32);
@@ -57,11 +58,11 @@ void (*mem68k_store_byte[0x1000])(Uint32, Uint8);
 void (*mem68k_store_word[0x1000])(Uint32, Uint16);
 void (*mem68k_store_long[0x1000])(Uint32, Uint32);
 
-static static Uint8 *mem68k_memptr_bad(Uint32 addr);
-static static Uint8 *mem68k_memptr_cpu(Uint32 addr);
-static static Uint8 *mem68k_memptr_bios(Uint32 addr);
-static static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
-static static Uint8 *mem68k_memptr_ram(Uint32 addr);
+static Uint8 *mem68k_memptr_bad(Uint32 addr);
+static Uint8 *mem68k_memptr_cpu(Uint32 addr);
+static Uint8 *mem68k_memptr_bios(Uint32 addr);
+static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
+static Uint8 *mem68k_memptr_ram(Uint32 addr);
 
 static void BankswitcherInit(void)
 {
