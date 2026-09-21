@@ -21,6 +21,17 @@ static GNG_Surface FrameSurface;
 static Uint16 FramePixels[352*256];
 static int AudioRate=44100;
 static int CoreInitialized=0;
+
+#ifdef GNGEO_CI_FRAME_TRACE
+static uint32_t GnGeoFrameNumber;
+
+static uint32_t GnGeoFrameHash(void)
+{
+ uint32_t h=2166136261u;
+ for(unsigned y=0;y<224;y++) for(unsigned x=0;x<320;x++) { h^=FramePixels[(y+16)*352+(x+16)]; h*=16777619u; }
+ return h;
+}
+#endif
 int Fc=0, LastLine=0, SkipFrame=0, SkipNext=0;
 
 static void GnGeoSoundIrq(int irq)
@@ -54,6 +65,9 @@ void init_neo(void)
  FrameSurface.w=352; FrameSurface.h=256; FrameSurface.pitch=352*2; FrameSurface.pixels=FramePixels;
  buffer=&FrameSurface; visible_area.x=16; visible_area.y=16; visible_area.w=320; visible_area.h=224;
  memset(FramePixels,0,sizeof(FramePixels));
+#ifdef GNGEO_CI_FRAME_TRACE
+ GnGeoFrameNumber=0;
+#endif
  memory.vid.modulo=1;
  cpu_68k_init(); pd4990a_init();
  cpu_z80_init();
@@ -133,6 +147,10 @@ int GnGeoRunFrame(void)
  memory.watchdog++; if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;} cpu_68k_interrupt(1);
  pd4990a_addretrace();
  if(Fc>=neogeo_frame_counter_speed){Fc=0;neogeo_frame_counter++;} Fc++;
+#ifdef GNGEO_CI_FRAME_TRACE
+ GnGeoFrameNumber++;
+ if((GnGeoFrameNumber%30)==0) printf("GNGEO_FRAME frame=%u hash=%08x\\n",GnGeoFrameNumber,GnGeoFrameHash());
+#endif
  return 1;
 }
 
