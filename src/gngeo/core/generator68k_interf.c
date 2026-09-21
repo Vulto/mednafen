@@ -1,5 +1,4 @@
 #include "gngeo_compat.h"
-/* 68000 interface for the GnGeo core. */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
