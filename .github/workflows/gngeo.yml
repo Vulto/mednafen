@@ -83,26 +83,26 @@ jobs:
             test -n "$wid"
             xdotool windowfocus "$wid"
             sleep 2
-            xdotool key --window "$wid" F8
+            xdotool key --window "$wid" 5
             xdotool key --window "$wid" Return
-            xdotool keydown --window "$wid" Right
+            xdotool keydown --window "$wid" d
             sleep 0.25
-            xdotool keyup --window "$wid" Right
-            xdotool keydown --window "$wid" z
+            xdotool keyup --window "$wid" d
+            xdotool keydown --window "$wid" j
             sleep 0.25
-            xdotool keyup --window "$wid" z
-            xdotool keydown --window "$wid" x
+            xdotool keyup --window "$wid" j
+            xdotool keydown --window "$wid" k
             sleep 0.25
-            xdotool keyup --window "$wid" x
-            xdotool keydown --window "$wid" a
+            xdotool keyup --window "$wid" k
+            xdotool keydown --window "$wid" u
             sleep 0.25
-            xdotool keyup --window "$wid" a
-            xdotool keydown --window "$wid" s
+            xdotool keyup --window "$wid" u
+            xdotool keydown --window "$wid" i
             sleep 0.25
-            xdotool keyup --window "$wid" s
-            xdotool keydown --window "$wid" Up
+            xdotool keyup --window "$wid" i
+            xdotool keydown --window "$wid" w
             sleep 0.25
-            xdotool keyup --window "$wid" Up
+            xdotool keyup --window "$wid" w
             sleep 2
             kill -TERM "$pid"
             wait "$pid"
