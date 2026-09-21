@@ -175,3 +175,5 @@ int cpu_68k_getcycle(void)
 #include "generator68k/cpu68k.h"
 size_t GnGeo68kStateSize(void) { return sizeof(regs); }
 void GnGeo68kStateSaveLoad(void *p, int load) { if(load) memcpy(&regs,p,sizeof(regs)); else memcpy(p,&regs,sizeof(regs)); }
+
+#endif /* USE_GENERATOR68K */
