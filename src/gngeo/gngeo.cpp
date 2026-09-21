@@ -15,7 +15,7 @@ namespace Mednafen { namespace MDFN_IEN_GNGEO {
 static GAME_ROMS GameRoms;
 static const IDIISG IDII = {
  IDIIS_Button("up","UP",0,"down"), IDIIS_Button("down","DOWN",1,"up"), IDIIS_Button("left","LEFT",2,"right"), IDIIS_Button("right","RIGHT",3,"left"),
- IDIIS_ButtonCR("a","A",4,nullptr), IDIIS_ButtonCR("b","B",5,nullptr), IDIIS_ButtonCR("c","C",6,nullptr), IDIIS_ButtonCR("d","D",7,nullptr), IDIIS_ButtonCR("start","START",8,nullptr), IDIIS_ButtonCR("coin","COIN",9,nullptr)
+ IDIIS_ButtonCR("a","A",4,nullptr), IDIIS_ButtonCR("b","B",5,nullptr), IDIIS_ButtonCR("c","C",6,nullptr), IDIIS_ButtonCR("d","D",7,nullptr), IDIIS_ButtonCR("start","START",8,nullptr), IDIIS_ButtonCR("select","SELECT",9,nullptr), IDIIS_ButtonCR("coin","COIN",10,nullptr)
 };
 static const std::vector<InputDeviceInfoStruct> InputDeviceInfo = {{ "gamepad", "Neo Geo Controller", "", IDII, 0 }};
 static const std::vector<InputPortInfoStruct> PortInfo = {{"p1","Player 1",InputDeviceInfo,"gamepad"},{"p2","Player 2",InputDeviceInfo,"gamepad"}};
@@ -28,7 +28,7 @@ static void SetInput(unsigned port,const char *type,uint8 *ptr){ if(!strcmp(type
 static void ApplyInput(){
  uint8 p1=0xff,p2=0xff,s=0x8f,c=7;
  auto apply=[](uint8 *p,uint8 &v){if(!p)return; if(p[0]&&!p[1])v&=0xfe; if(p[1]&&!p[0])v&=0xfd; if(p[2]&&!p[3])v&=0xfb; if(p[3]&&!p[2])v&=0xf7; if(p[4])v&=0xef;if(p[5])v&=0xdf;if(p[6])v&=0xbf;if(p[7])v&=0x7f;};
- apply(InputP1,p1); apply(InputP2,p2); if(InputP1&&InputP1[8])s&=0xfe;if(InputP2&&InputP2[8])s&=0xfb;if(InputP1&&InputP1[9])c&=0x6;if(InputP2&&InputP2[9])c&=0x5;
+ apply(InputP1,p1); apply(InputP2,p2); if(InputP1&&InputP1[8])s&=0xfd;if(InputP2&&InputP2[8])s&=0xf7;if(InputP1&&InputP1[9])s&=0xfe;if(InputP2&&InputP2[9])s&=0xfb;if(InputP1&&InputP1[10])c&=0x6;if(InputP2&&InputP2[10])c&=0x5;
  GnGeoCoreSetInput(p1,p2,s,c,0);
 }
 static void Load(GameFile *gf)
