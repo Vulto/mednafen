@@ -302,27 +302,28 @@ LONG_FETCH(mem68k_fetch_pal)
 
 /**** VIDEO ****/
 Uint8 mem68k_fetch_video_byte(Uint32 addr) {
-    //printf("mem6k_fetch_video_byte %08x\n",addr);
-    if (!(addr&0x1))
-        return mem68k_fetch_video_word(addr)>>8;
-    else {
-        Uint32 lpc=cpu_68k_getpc()+2;
-        switch((lpc&0xF00000)>>20) {
-        case 0x0:
-            return READ_WORD(&memory.rom.cpu_m68k.p+(lpc&0xFFFFF));
-            break;
-        case 0x2:
-            return READ_WORD(&memory.rom.cpu_m68k.p+bankaddress+(lpc&0xFFFFF));
-            break;
-        case 0xC:
-            if (lpc<=0xc1FFff)
-                return READ_WORD(&memory.rom.bios_m68k.p+(lpc&0xFFFFF));
-            break;
-        }
+    /*
+     * The Neo Geo video register's odd-byte read mirrors the next CPU
+     * instruction byte.  Return the high byte of the instruction word from
+     * the same mapped CPU/BIOs address space instead of interpreting that
+     * byte as a video-register value.
+     */
+    if (!(addr & 1))
+        return mem68k_fetch_video_word(addr) >> 8;
+
+    Uint32 lpc = cpu_68k_getpc() + 2;
+    switch((lpc & 0xF00000) >> 20) {
+    case 0x0:
+        return READ_BYTE_ROM(memory.rom.cpu_m68k.p + (lpc & 0xFFFFF));
+    case 0x2:
+        return READ_BYTE_ROM(memory.rom.cpu_m68k.p + bankaddress + (lpc & 0xFFFFF));
+    case 0xC:
+        if (lpc <= 0xC1FFFF)
+            return READ_BYTE_ROM(memory.rom.bios_m68k.p + (lpc & 0x1FFFF));
+        break;
+    default:
+        break;
     }
-    //	addr &= 0xFFFF;
-    //	if (addr == 0xe)
-    //		return 0xff;
     return 0xFF;
 }
 
