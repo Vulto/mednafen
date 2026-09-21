@@ -29,7 +29,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y             autoconf automake autopoint gettext libtool pkg-config             build-essential libasound2-dev libasound2t64             libjack-jackd2-dev libsamplerate0-dev zlib1g-dev             libsdl2-dev libflac-dev liblzo2-dev libzstd-dev
+          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb
 
       - name: Prepare autotools
         run: |
@@ -48,36 +48,15 @@ jobs:
           sudo add-apt-repository -y ppa:dciabrin/ngdevkit
           sudo apt-get update
           sudo apt-get install -y ngdevkit
-          mkdir -p "$RUNNER_TEMP/mednafen-home/firmware" "$RUNNER_TEMP/gngeo-test"
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
-          bios_path="$(dpkg -L ngdevkit | grep '/neogeo\\.zip        run: |
-          test -f src/gngeo/gngeo.cpp
-          test -f src/gngeo/core/gngeo_runtime.c
-          test -f src/gngeo/core/gngeo_state.c
-          ! grep -RIn --exclude='*.md' -E '#[[:space:]]*include[[:space:]]*[<"]SDL' src/gngeo
-          ! grep -RIn -E 'usage limit|usage_limit|codex.*limit|limit.*codex' .github src/gngeo || true
-
-      - name: Core symbol audit
-        run: |
-          nm src/mednafen 2>/dev/null | grep -E 'EmulatedGnGeo' || true
-          test -f src/gngeo/core/gngeo_runtime.c
-          grep -q 'GnGeoCoreStateSaveLoad' src/gngeo/core/gngeo_state.c
-
-      - name: Package build artifact
-        run: |
-          mkdir -p artifacts
-          cp src/mednafen artifacts/mednafen-gngeo
-          tar -czf artifacts/mednafen-gngeo-build.tar.gz artifacts/mednafen-gngeo
- | head -1)"
+          mkdir -p "$MEDNAFEN_HOME/firmware" "$RUNNER_TEMP/gngeo-test"
+          bios_path="$(dpkg -L ngdevkit | grep '/neogeo[.]zip$' | head -1)"
           test -n "$bios_path"
           test -f "$bios_path"
           cp "$bios_path" "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          curl -fL --retry 3 -o "$RUNNER_TEMP/gngeo-test/puzzledp.zip" \\
-            https://raw.githubusercontent.com/PeterLemon/NEO-GEO/master/HelloWorld/puzzledp.zip
+          curl -fL --retry 3 -o "$RUNNER_TEMP/gngeo-test/puzzledp.zip" https://raw.githubusercontent.com/PeterLemon/NEO-GEO/master/HelloWorld/puzzledp.zip
           set +e
-          timeout --signal=TERM 10s xvfb-run -a env SDL_AUDIODRIVER=dummy \\
-            ./src/mednafen/mednafen -force_module gngeo -sound 0 \\
-            "$RUNNER_TEMP/gngeo-test/puzzledp.zip" >"$RUNNER_TEMP/gngeo-test/mednafen.log" 2>&1
+          timeout --signal=TERM 10s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen/mednafen -force_module gngeo -sound 0 "$RUNNER_TEMP/gngeo-test/puzzledp.zip" >"$RUNNER_TEMP/gngeo-test/mednafen.log" 2>&1
           status=$?
           set -e
           cat "$RUNNER_TEMP/gngeo-test/mednafen.log"
