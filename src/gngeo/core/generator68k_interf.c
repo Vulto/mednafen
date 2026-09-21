@@ -169,17 +169,6 @@ void (*mem68k_store_byte[0x1000]) (Uint32 addr, Uint8 data);
 void (*mem68k_store_word[0x1000]) (Uint32 addr, Uint16 data);
 void (*mem68k_store_long[0x1000]) (Uint32 addr, Uint32 data);
 
-static void swap_memory(Uint8 *mem, Uint32 length)
-{
-    for (Uint32 i = 0; i + 1 < length; i += 2) {
-        Uint8 t = mem[i];
-        mem[i] = mem[i + 1];
-        mem[i + 1] = t;
-    }
-}
-
-
-
 int cpu_68k_run(Uint32 nb_cycle)
 {
     static int n;
