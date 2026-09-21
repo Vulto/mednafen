@@ -1,20 +1,6 @@
-void cpu_68k_init(void)
-{
-    printf("GEN68k CPU INIT\n");
-    cpu68k_clearcache();
-    cpu68k_ram = memory.ram;
-    cpu68k_rom = memory.rom.cpu_m68k.p;
-    if (memory.rom.cpu_m68k.size < 0x100000)
-        cpu68k_romlen = memory.rom.cpu_m68k.size;
-    else
-        cpu68k_romlen = 0x100000;
-    mem68k_init();
-    cpu68k_init();
-    if (memory.rom.cpu_m68k.size > 0x100000)
-        cpu_68k_bankswitch(0);
-}
- 
 #include "gngeo_compat.h"
+#include <stdio.h>
+#include <string.h>
 /*  gngeo a neogeo emulator
  *  Copyright (C) 2001 Peponas Mathieu
  * 
@@ -179,6 +165,122 @@ static void swap_memory(Uint8 *mem, Uint32 length)
 }
 
 
+
+
+static void swap_memory(Uint8 *mem, Uint32 length)
+{
+    for(Uint32 i = 0; i + 1 < length; i += 2)
+    {
+        Uint8 t = mem[i];
+        mem[i] = mem[i + 1];
+        mem[i + 1] = t;
+    }
+}
+
+void bankswitcher_init(void)
+{
+    mem68k_def[2].fetch_byte = mem68k_fetch_bk_normal_byte;
+    mem68k_def[2].fetch_word = mem68k_fetch_bk_normal_word;
+    mem68k_def[2].fetch_long = mem68k_fetch_bk_normal_long;
+    mem68k_def[2].store_byte = mem68k_store_bk_normal_byte;
+    mem68k_def[2].store_word = mem68k_store_bk_normal_word;
+    mem68k_def[2].store_long = mem68k_store_bk_normal_long;
+}
+
+int mem68k_init(void)
+{
+    int i = 0;
+    int j;
+
+    bankswitcher_init();
+
+    memset(mem68k_memptr, 0, sizeof(mem68k_memptr));
+    memset(mem68k_fetch_byte, 0, sizeof(mem68k_fetch_byte));
+    memset(mem68k_fetch_word, 0, sizeof(mem68k_fetch_word));
+    memset(mem68k_fetch_long, 0, sizeof(mem68k_fetch_long));
+    memset(mem68k_store_byte, 0, sizeof(mem68k_store_byte));
+    memset(mem68k_store_word, 0, sizeof(mem68k_store_word));
+    memset(mem68k_store_long, 0, sizeof(mem68k_store_long));
+
+    do
+    {
+        for(j = mem68k_def[i].start; j <= mem68k_def[i].end && j < 0x1000; j++)
+        {
+            mem68k_memptr[j] = mem68k_def[i].memptr;
+            mem68k_fetch_byte[j] = mem68k_def[i].fetch_byte;
+            mem68k_fetch_word[j] = mem68k_def[i].fetch_word;
+            mem68k_fetch_long[j] = mem68k_def[i].fetch_long;
+            mem68k_store_byte[j] = mem68k_def[i].store_byte;
+            mem68k_store_word[j] = mem68k_def[i].store_word;
+            mem68k_store_long[j] = mem68k_def[i].store_long;
+        }
+        i++;
+    } while(mem68k_def[i].start != 0 || mem68k_def[i].end != 0);
+
+    return 0;
+}
+
+Uint8 *mem68k_memptr_bad(Uint32 addr)
+{
+    return memory.rom.cpu_m68k.p;
+}
+
+Uint8 *mem68k_memptr_cpu(Uint32 addr)
+{
+    if(addr < cpu68k_romlen)
+        return memory.rom.cpu_m68k.p + addr;
+    return memory.rom.cpu_m68k.p;
+}
+
+Uint8 *mem68k_memptr_bios(Uint32 addr)
+{
+    return memory.rom.bios_m68k.p + (addr & 0x1FFFF);
+}
+
+Uint8 *mem68k_memptr_cpu_bk(Uint32 addr)
+{
+    return memory.rom.cpu_m68k.p + (addr & 0xFFFFF) + bankaddress;
+}
+
+Uint8 *mem68k_memptr_ram(Uint32 addr)
+{
+    return memory.ram + (addr & 0xFFFF);
+}
+
+void cpu_68k_bankswitch(Uint32 address)
+{
+    bankaddress = address;
+}
+
+void cpu_68k_reset(void)
+{
+    cpu68k_reset();
+}
+
+void cpu_68k_init(void)
+{
+    printf("GEN68k CPU INIT\\n");
+
+    cpu68k_clearcache();
+
+#ifndef WORDS_BIGENDIAN
+    swap_memory(memory.rom.cpu_m68k.p, memory.rom.cpu_m68k.size);
+    if(memory.rom.bios_m68k.p[0] == 0x10)
+        swap_memory(memory.rom.bios_m68k.p, memory.rom.bios_m68k.size);
+    swap_memory(memory.game_vector, 0x80);
+#endif
+
+    cpu68k_ram = memory.ram;
+    cpu68k_rom = memory.rom.cpu_m68k.p;
+    cpu68k_romlen = memory.rom.cpu_m68k.size < 0x100000 ?
+        memory.rom.cpu_m68k.size : 0x100000;
+
+    mem68k_init();
+    cpu68k_init();
+
+    if(memory.rom.cpu_m68k.size > 0x100000)
+        cpu_68k_bankswitch(0);
+}
 
 int cpu_68k_run(Uint32 nb_cycle)
 {
