@@ -34,6 +34,84 @@ static Uint8 *mem68k_memptr_ram(Uint32 addr);
 int diss68k_getdumpline(uint32 addr68k, uint8 *addr, char *dumpline);
 
 t_mem68k_def mem68k_def[] = {
+ {0x000, 0x0fff, mem68k_memptr_bad,
+  mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long,
+  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0x100, 0x1ff, mem68k_memptr_ram,
+  mem68k_fetch_ram_byte, mem68k_fetch_ram_word, mem68k_fetch_ram_long,
+  mem68k_store_ram_byte, mem68k_store_ram_word, mem68k_store_ram_long},
+ {0x200, 0x2ff, mem68k_memptr_cpu_bk,
+  NULL, NULL, NULL, NULL, NULL, NULL},
+ {0x000, 0x0ff, mem68k_memptr_cpu,
+  mem68k_fetch_cpu_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long,
+  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0xc00, 0xcff, mem68k_memptr_bios,
+  mem68k_fetch_bios_byte, mem68k_fetch_bios_word, mem68k_fetch_bios_long,
+  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0xd00, 0xdff, mem68k_memptr_bad,
+  mem68k_fetch_sram_byte, mem68k_fetch_sram_word, mem68k_fetch_sram_long,
+  mem68k_store_sram_byte, mem68k_store_sram_word, mem68k_store_sram_long},
+ {0x400, 0x401, mem68k_memptr_bad,
+  mem68k_fetch_pal_byte, mem68k_fetch_pal_word, mem68k_fetch_pal_long,
+  mem68k_store_pal_byte, mem68k_store_pal_word, mem68k_store_pal_long},
+ {0x3c0, 0x3c0, mem68k_memptr_bad,
+  mem68k_fetch_video_byte, mem68k_fetch_video_word, mem68k_fetch_video_long,
+  mem68k_store_video_byte, mem68k_store_video_word, mem68k_store_video_long},
+ {0x300, 0x300, mem68k_memptr_bad,
+  mem68k_fetch_ctl1_byte, mem68k_fetch_ctl1_word, mem68k_fetch_ctl1_long,
+  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0x340, 0x340, mem68k_memptr_bad,
+  mem68k_fetch_ctl2_byte, mem68k_fetch_ctl2_word, mem68k_fetch_ctl2_long,
+  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
+ {0x380, 0x380, mem68k_memptr_bad,
+  mem68k_fetch_ctl3_byte, mem68k_fetch_ctl3_word, mem68k_fetch_ctl3_long,
+  mem68k_store_pd4990_byte, mem68k_store_pd4990_word, mem68k_store_pd4990_long},
+ {0x320, 0x320, mem68k_memptr_bad,
+  mem68k_fetch_coin_byte, mem68k_fetch_coin_word, mem68k_fetch_coin_long,
+  mem68k_store_z80_byte, mem68k_store_z80_word, mem68k_store_z80_long},
+ {0x800, 0x800, mem68k_memptr_bad,
+  mem68k_fetch_memcrd_byte, mem68k_fetch_memcrd_word, mem68k_fetch_memcrd_long,
+  mem68k_store_memcrd_byte, mem68k_store_memcrd_word, mem68k_store_memcrd_long},
+ {0x3a0, 0x3a0, mem68k_memptr_bad,
+  mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long,
+  mem68k_store_setting_byte, mem68k_store_setting_word, mem68k_store_setting_long},
+ {0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+};clude "gngeo_compat.h"
+/* Generator 68000 integration. */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef USE_GENERATOR68K
+#include <stdlib.h>
+#include <string.h>
+
+#include "generator68k/generator.h"
+#include "generator68k/cpu68k.h"
+#include "generator68k/reg68k.h"
+#include "generator68k/mem68k.h"
+#include "memory.h"
+#include "emu.h"
+#include "state.h"
+#include "gnutil.h"
+
+extern unsigned int cpu68k_clocks;
+extern Uint8 *cpu68k_rom;
+extern unsigned int cpu68k_romlen;
+extern Uint8 *cpu68k_ram;
+
+extern Uint32 reg68k_pc;
+extern t_sr reg68k_sr;
+
+static Uint8 *mem68k_memptr_bad(Uint32 addr);
+static Uint8 *mem68k_memptr_cpu(Uint32 addr);
+static Uint8 *mem68k_memptr_bios(Uint32 addr);
+static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
+static Uint8 *mem68k_memptr_ram(Uint32 addr);
+int diss68k_getdumpline(uint32 addr68k, uint8 *addr, char *dumpline);
+
+t_mem68k_def mem68k_def[] = {
  {0x000, 0x0fff, mem68k_memptr_bad, mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
  {0x100, 0x1ff, mem68k_memptr_ram, mem68k_fetch_ram_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
  {0x200, 0x2ff, mem68k_memptr_cpu_bk, NULL, NULL, NULL, NULL, NULL, NULL},
