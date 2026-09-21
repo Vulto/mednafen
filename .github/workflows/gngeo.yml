@@ -54,7 +54,7 @@ jobs:
           unzip -p "$TEST_DIR/kof2003.zip" sp-s2.sp1 > "$TEST_DIR/sp-s2.sp1"
           unzip -p "$TEST_DIR/kof2003.zip" sfix.sfix > "$TEST_DIR/sfix.sfix"
           unzip -p "$TEST_DIR/kof2003.zip" sm1.sm1 > "$TEST_DIR/sm1.sm1"
-          (cd "$TEST_DIR" && zip -q "$TEST_DIR/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1)
+          (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1)
           set +e
           timeout --signal=TERM 15s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/mednafen.log" 2>&1
           status=$?
