@@ -375,6 +375,17 @@ int init_rotd(GAME_ROMS *r) {
 	return 0;
 }
 
+int init_kof2003(GAME_ROMS *r) {
+	if (need_decrypt) {
+		kof2003_decrypt_68k(r);
+		neo_pcm2_swap(r, 5);
+		neogeo_cmc50_m1_decrypt(r);
+		kof2000_neogeo_gfx_decrypt(r, 0x9d);
+	}
+	neogeo_fix_bank_type = 2;
+	return 0;
+}
+
 int init_kof2002(GAME_ROMS *r) {
 	if (need_decrypt) {
 		kof2002_decrypt_68k(r);
@@ -754,6 +765,7 @@ struct roms_init_func {
 	{ "kof98", init_kof98},
 	{ "rotd", init_rotd},
 	{ "kof2002", init_kof2002},
+	{ "kof2003", init_kof2003},
 	{ "kof2002b", init_kof2002b},
 	{ "kf2k2pls", init_kf2k2pls},
 	{ "kf2k2mp", init_kf2k2mp},
