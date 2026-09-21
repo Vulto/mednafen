@@ -20,6 +20,9 @@ Uint16 play_buffer[16384];
 static GNG_Surface FrameSurface;
 static Uint16 FramePixels[352*256];
 static int AudioRate=44100;
+#ifdef GNGEO_CI_AUDIO_TRACE
+static unsigned GnGeoAudioCalls;
+#endif
 static int CoreInitialized=0;
 
 #ifdef GNGEO_CI_FRAME_TRACE
@@ -73,6 +76,9 @@ void init_neo(void)
  cpu_z80_init();
  conf.sound=1;
  YM2610_sh_start();
+#ifdef GNGEO_CI_AUDIO_TRACE
+ GnGeoAudioCalls=0;
+#endif
  init_video();
  neogeo_reset();
  update_all_pal();
@@ -119,6 +125,14 @@ unsigned GnGeoCoreGenerateAudio(int16_t *out,unsigned frames)
  unsigned n=frames; if(n>8192)n=8192;
  YM2610Update_stream((int)n);
  memcpy(out,play_buffer,n*2*sizeof(int16_t));
+#ifdef GNGEO_CI_AUDIO_TRACE
+ GnGeoAudioCalls++;
+ if((GnGeoAudioCalls%60)==0) {
+  unsigned nonzero=0;
+  for(unsigned i=0;i<n*2;i++) if(play_buffer[i]) nonzero++;
+  printf("GNGEO_AUDIO call=%u frames=%u nonzero=%u\\n",GnGeoAudioCalls,n,nonzero);
+ }
+#endif
  return n;
 }
 

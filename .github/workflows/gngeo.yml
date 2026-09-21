@@ -37,7 +37,7 @@ jobs:
 
       - name: Configure GnGeo
         run: |
-          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE" ./configure --enable-gngeo --disable-debugger
+          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE" ./configure --enable-gngeo --disable-debugger
 
       - name: Build
         run: |
@@ -110,6 +110,19 @@ jobs:
           cat "$TEST_DIR/input.log"
           grep -q 'GNGEO_INPUT' "$TEST_DIR/input.log"
           grep -Eq 'GNGEO_INPUT .*p1=[0-9a-f]{2}' "$TEST_DIR/input.log"
+
+      - name: Neo Geo audio test
+        run: |
+          export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
+          export TEST_DIR="$RUNNER_TEMP/gngeo-test"
+          set +e
+          timeout --signal=TERM 12s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 1 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/audio.log" 2>&1
+          status=$?
+          set -e
+          cat "$TEST_DIR/audio.log"
+          test "$status" -eq 124
+          grep -q 'GNGEO_AUDIO' "$TEST_DIR/audio.log"
+          test "$(grep 'GNGEO_AUDIO' "$TEST_DIR/audio.log" | awk -F'nonzero=' '{print $2}' | awk '$1 > 0 {n++} END {print n+0}')" -ge 1
 
       - name: Neo Geo gameplay video test
         run: |
