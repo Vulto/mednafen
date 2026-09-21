@@ -55,21 +55,22 @@ bool GnGeoLoadBiosLo(GameFile *gf)
     {
         for(size_t i = 0; i < archive->num_files(); i++)
         {
+            const std::string *path = archive->get_file_path(i);
+            if(path == nullptr)
+                continue;
+            if(*path != "000-lo.lo" && *path != "/000-lo.lo")
+                continue;
             try
             {
-                if(archive->get_file_size(i) == 0)
-                    continue;
                 stream.reset(archive->open(i));
-                if(stream)
-                    break;
             }
             catch(const MDFN_Error&)
             {
                 stream.reset();
             }
+            break;
         }
     }
-
     if(!stream)
         return false;
 
