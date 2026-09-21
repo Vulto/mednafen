@@ -29,7 +29,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb
+          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xdotool
 
       - name: Prepare autotools
         run: |
@@ -37,7 +37,7 @@ jobs:
 
       - name: Configure GnGeo
         run: |
-          ./configure --enable-gngeo --disable-debugger
+          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE" ./configure --enable-gngeo --disable-debugger
 
       - name: Build
         run: |
@@ -64,6 +64,48 @@ jobs:
           test "$status" -eq 124
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM' "$TEST_DIR/mednafen.log"
           test -s "$TEST_DIR/mednafen.log"
+
+      - name: Neo Geo input test
+        run: |
+          export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
+          export TEST_DIR="$RUNNER_TEMP/gngeo-test"
+          set +e
+          xvfb-run -a bash -c '
+            SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/input.log" 2>&1 &
+            pid=$!
+            wid=""
+            for i in $(seq 1 30); do
+              wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
+              test -n "$wid" && break
+              sleep 1
+            done
+            test -n "$wid"
+            xdotool windowactivate "$wid"
+            sleep 2
+            xdotool key --window "$wid" F8
+            xdotool key --window "$wid" Return
+            xdotool keydown --window "$wid" Right
+            xdotool keyup --window "$wid" Right
+            xdotool keydown --window "$wid" z
+            xdotool keyup --window "$wid" z
+            xdotool keydown --window "$wid" x
+            xdotool keyup --window "$wid" x
+            xdotool keydown --window "$wid" a
+            xdotool keyup --window "$wid" a
+            xdotool keydown --window "$wid" s
+            xdotool keyup --window "$wid" s
+            xdotool keydown --window "$wid" Up
+            xdotool keyup --window "$wid" Up
+            sleep 2
+            kill -TERM "$pid"
+            wait "$pid"
+          '
+          status=$?
+          set -e
+          cat "$TEST_DIR/input.log"
+          test "$status" -eq 143 || test "$status" -eq 124
+          grep -q 'GNGEO_INPUT' "$TEST_DIR/input.log"
+          grep -Eq 'GNGEO_INPUT .*p1=([0-9a-f][0-9a-f])' "$TEST_DIR/input.log"
 
       - name: GnGeo source audit
         run: |
