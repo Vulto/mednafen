@@ -26,6 +26,12 @@ extern Uint8 *cpu68k_ram;
 extern Uint32 reg68k_pc;
 extern t_sr reg68k_sr;
 
+static Uint8 *mem68k_memptr_bad(Uint32 addr);
+static Uint8 *mem68k_memptr_cpu(Uint32 addr);
+static Uint8 *mem68k_memptr_bios(Uint32 addr);
+static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
+static Uint8 *mem68k_memptr_ram(Uint32 addr);
+
 t_mem68k_def mem68k_def[] = {
  {0x000, 0x0ff, NULL, mem68k_fetch_cpu_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
  {0x100, 0x1ff, NULL, mem68k_fetch_ram_byte, mem68k_fetch_ram_word, mem68k_fetch_ram_long, mem68k_store_ram_byte, mem68k_store_ram_word, mem68k_store_ram_long},
