@@ -167,16 +167,6 @@ static void swap_memory(Uint8 *mem, Uint32 length)
 
 
 
-static void swap_memory(Uint8 *mem, Uint32 length)
-{
-    for(Uint32 i = 0; i + 1 < length; i += 2)
-    {
-        Uint8 t = mem[i];
-        mem[i] = mem[i + 1];
-        mem[i + 1] = t;
-    }
-}
-
 void bankswitcher_init(void)
 {
     mem68k_def[2].fetch_byte = mem68k_fetch_bk_normal_byte;
