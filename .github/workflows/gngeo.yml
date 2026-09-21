@@ -55,14 +55,31 @@ jobs:
           (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1)
           cp "$MEDNAFEN_HOME/firmware/neogeo.zip" "$TEST_DIR/neogeo.zip"
           set +e
-          timeout --signal=TERM 15s xvfb-run -a env SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/mednafen.log" 2>&1
-          status=$?
+          xvfb-run -a bash -c '
+            SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
+            pid=$!
+            wid=""
+            for i in $(seq 1 30); do
+              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              test -n "$wid" && break
+              sleep 1
+            done
+            test -n "$wid"
+            xdotool windowfocus "$wid"
+            sleep 2
+            xdotool key --window "$wid" 5
+            sleep 0.5
+            xdotool key --window "$wid" Return
+            sleep 8
+            kill -TERM "$pid" 2>/dev/null || true
+            wait "$pid" || true
+          '
           set -e
           cat "$TEST_DIR/mednafen.log"
-          test "$status" -eq 124
           grep -q 'Selecting Game Vector' "$TEST_DIR/mednafen.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/mednafen.log"
-          test -s "$TEST_DIR/mednafen.log"
+          test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/mednafen.log")" -ge 10
+          test "$(grep 'GNGEO_FRAME' "$TEST_DIR/mednafen.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 4
 
       - name: Neo Geo input test
         run: |
