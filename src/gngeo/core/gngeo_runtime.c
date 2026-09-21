@@ -105,7 +105,7 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo)
  conf.system=SYS_ARCADE; conf.country=CTY_EUROPE; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
 }
 
-int GnGeoCoreInitRoms(void) { if(GnGeoInitRoms(&memory.rom)!=0) return -1; convert_all_tile(&memory.rom); convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p); if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage); return 0; }
+int GnGeoCoreInitRoms(void) { if(GnGeoInitRoms(&memory.rom)!=0) return -1; memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80); memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80); memory.current_vector=0; convert_all_tile(&memory.rom); convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p); if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage); return 0; }
 
 void GnGeoCoreSetInput(uint8_t p1,uint8_t p2,uint8_t start,uint8_t coin,uint8_t unused) { (void)unused; memory.intern_p1=p1; memory.intern_p2=p2; memory.intern_start=start; memory.intern_coin=coin; }
 
