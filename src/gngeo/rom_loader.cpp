@@ -219,6 +219,8 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         else if(country == CTY_USA) { romfile = "usa_2slt.bin"; bios_crc = 0xe72943de; }
         else if(country == CTY_ASIA) { romfile = "asia-s3.rom"; bios_crc = 0x91b64be3; }
         std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, bios_crc);
+        if(!stream && system == SYS_ARCADE && country == CTY_EUROPE)
+            stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, 0);
         if(!stream) return false;
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_m68k, size, REGION_MAIN_CPU_BIOS) != 0) return false;
