@@ -106,12 +106,23 @@ static void Emulate(EmulateSpecStruct *espec){
  espec->MasterCycles=200000;
 }
 
+#ifdef GNGEO_CI_STATE_TRACE
+static unsigned GnGeoStateSaveCount;
+static unsigned GnGeoStateLoadCount;
+#endif
+
 static void StateAction(StateMem *sm,const unsigned load,const bool data_only){
+#ifdef GNGEO_CI_STATE_TRACE
+ printf("GNGEO_STATE %s\n",load?"load":"save");
+#endif
  if(StateBlob.empty()) StateBlob.resize(GnGeoCoreStateSize());
  SFORMAT sf[]={{"GNCORE",StateBlob.data(),(uint32)StateBlob.size(),1,SFORMAT::FORM::GENERIC,0,0},{NULL,NULL,0,0,SFORMAT::FORM::GENERIC,0,0}};
  if(!load) GnGeoCoreStateSaveLoad(StateBlob.data(),0);
  MDFNSS_StateAction(sm,load,data_only,sf,"GNGEO");
  if(load) GnGeoCoreStateSaveLoad(StateBlob.data(),1);
+#ifdef GNGEO_CI_STATE_TRACE
+ if(load) GnGeoStateLoadCount++; else GnGeoStateSaveCount++;
+#endif
 }
 
 static void DoSimpleCommand(int cmd){

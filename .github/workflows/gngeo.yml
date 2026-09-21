@@ -37,7 +37,7 @@ jobs:
 
       - name: Configure GnGeo
         run: |
-          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE" ./configure --enable-gngeo --disable-debugger
+          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE" ./configure --enable-gngeo --disable-debugger
 
       - name: Build
         run: |
@@ -127,6 +127,49 @@ jobs:
           test "$status" -eq 124
           grep -q 'GNGEO_AUDIO' "$TEST_DIR/audio.log"
           test "$(grep 'GNGEO_AUDIO' "$TEST_DIR/audio.log" | awk -F'nonzero=' '{print $2}' | awk '$1 > 0 {n++} END {print n+0}')" -ge 1
+
+      - name: Neo Geo savestate test
+        run: |
+          export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-state-home"
+          export TEST_DIR="$RUNNER_TEMP/gngeo-test"
+          mkdir -p "$MEDNAFEN_HOME/firmware"
+          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          xvfb-run -a bash -c '
+            SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/state.log" 2>&1 &
+            pid=$!
+            wid=""
+            for i in $(seq 1 60); do
+              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              test -n "$wid" && break
+              sleep 1
+            done
+            test -n "$wid"
+            xdotool windowfocus "$wid"
+            sleep 4
+            xdotool key --window "$wid" 5
+            sleep 1
+            xdotool key --window "$wid" Return
+            sleep 2
+            xdotool key --window "$wid" F5
+            sleep 1
+            xdotool keydown --window "$wid" d
+            sleep 1
+            xdotool keyup --window "$wid" d
+            sleep 2
+            xdotool key --window "$wid" F7
+            sleep 1
+            xdotool keydown --window "$wid" d
+            sleep 1
+            xdotool keyup --window "$wid" d
+            sleep 2
+            kill -TERM "$pid" || true
+            wait "$pid" || true
+          '
+          cat "$TEST_DIR/state.log"
+          test "$(grep -c 'GNGEO_STATE save' "$TEST_DIR/state.log")" -ge 1
+          test "$(grep -c 'GNGEO_STATE load' "$TEST_DIR/state.log")" -ge 1
+          test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/state.log")" -ge 8
+          test "$(grep 'GNGEO_FRAME' "$TEST_DIR/state.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 3
 
       - name: Neo Geo gameplay video test
         run: |
