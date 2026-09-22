@@ -58,7 +58,7 @@ jobs:
 
       - name: Configure GnGeo
         run: |
-          CC="ccache gcc" CXX="ccache g++" CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE" ./configure --enable-gngeo --disable-debugger
+          CC="ccache gcc" CXX="ccache g++" CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE -DGNGEO_CI_CPU_TRACE" ./configure --enable-gngeo --disable-debugger
 
       - name: Normalize source timestamps
         run: |
