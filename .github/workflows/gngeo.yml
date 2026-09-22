@@ -59,6 +59,8 @@ jobs:
           make -C 01-helloworld build/rom/01_helloworld-p1.p1 build/rom/01_helloworld-s1.s1 build/rom/01_helloworld-c1.c1 build/rom/01_helloworld-c2.c2
           mkdir -p "$RUNNER_TEMP/01_helloworld"
           cp 01-helloworld/build/rom/01_helloworld-p1.p1 "$RUNNER_TEMP/01_helloworld/"
+          dd if="$RUNNER_TEMP/01_helloworld/01_helloworld-p1.p1" of="$RUNNER_TEMP/01_helloworld/01_helloworld-p1.raw" conv=swab status=none
+          mv "$RUNNER_TEMP/01_helloworld/01_helloworld-p1.raw" "$RUNNER_TEMP/01_helloworld/01_helloworld-p1.p1"
           cp 01-helloworld/build/rom/01_helloworld-s1.s1 "$RUNNER_TEMP/01_helloworld/"
           cp 01-helloworld/build/rom/01_helloworld-c1.c1 "$RUNNER_TEMP/01_helloworld/"
           cp 01-helloworld/build/rom/01_helloworld-c2.c2 "$RUNNER_TEMP/01_helloworld/"
