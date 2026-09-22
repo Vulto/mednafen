@@ -171,20 +171,20 @@ jobs:
           mkdir -p "$MEDNAFEN_HOME/firmware" "$RUNNER_TEMP/gngeo-gdb"
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           cat >"$RUNNER_TEMP/gngeo-gdb/gdb.cmd" <<'EOF'
-set pagination off
-set confirm off
-handle SIGPIPE nostop noprint pass
-run
-printf "\n--- THREAD BACKTRACE ---\n"
-thread apply all bt full
-printf "\n--- REGISTERS ---\n"
-info registers
-printf "\n--- INSTRUCTIONS ---\n"
-x/24i $pc-32
-printf "\n--- SHARED LIBRARIES ---\n"
-info sharedlibrary
-quit
-EOF
+          set pagination off
+          set confirm off
+          handle SIGPIPE nostop noprint pass
+          run
+          printf "\n--- THREAD BACKTRACE ---\n"
+          thread apply all bt full
+          printf "\n--- REGISTERS ---\n"
+          info registers
+          printf "\n--- INSTRUCTIONS ---\n"
+          x/24i $pc-32
+          printf "\n--- SHARED LIBRARIES ---\n"
+          info sharedlibrary
+          quit
+          EOF
           set +e
           DISPLAY=:99 SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1             gdb -q -batch -x "$RUNNER_TEMP/gngeo-gdb/gdb.cmd"             --args ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip"             >"$RUNNER_TEMP/gngeo-gdb/gdb.log" 2>&1
           status=$?
