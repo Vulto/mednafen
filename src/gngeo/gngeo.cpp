@@ -11,11 +11,6 @@ extern "C" {
 #include <cstring>
 #include <cctype>
 #include <memory>
-#ifdef GNGEO_CI_BACKTRACE
-#include <execinfo.h>
-#include <signal.h>
-#include <unistd.h>
-#endif
 
 namespace Mednafen { namespace MDFN_IEN_GNGEO {
 static GAME_ROMS GameRoms;
@@ -30,15 +25,6 @@ static const MDFNSetting GnGeoSettings[]={ { NULL } };
 static uint8 *InputP1,*InputP2;
 static std::vector<uint8> StateBlob;
 static unsigned CoinPulseFrames;
-#ifdef GNGEO_CI_BACKTRACE
-static void GnGeoCrashHandler(int sig)
-{
- void *frames[64];
- int count=backtrace(frames,64);
- backtrace_symbols_fd(frames,count,2);
- _exit(128+sig);
-}
-#endif
 
 static void SetInput(unsigned port,const char *type,uint8 *ptr){ if(!strcmp(type,"gamepad")){ if(port==0) InputP1=ptr; else if(port==1) InputP2=ptr; } }
 
@@ -53,21 +39,11 @@ static void ApplyInput(){
  if(InputP1&&InputP1[10])c&=0x6;
  if(InputP2&&InputP2[10])c&=0x5;
  if(CoinPulseFrames) { c&=0x6; CoinPulseFrames--; }
-#ifdef GNGEO_CI_INPUT_TRACE
- static uint8 lastP1=0xff,lastP2=0xff,lastS=0x8f,lastC=7;
- if(p1!=lastP1 || p2!=lastP2 || s!=lastS || c!=lastC) {
-  fprintf(stderr,"GNGEO_INPUT p1=%02x p2=%02x start=%02x coin=%02x\n",p1,p2,s,c);
-  lastP1=p1; lastP2=p2; lastS=s; lastC=c;
- }
-#endif
  GnGeoCoreSetInput(p1,p2,s,c,0);
 }
 
 static void Load(GameFile *gf)
 {
-#ifdef GNGEO_CI_BACKTRACE
- signal(SIGSEGV,GnGeoCrashHandler);
-#endif
  memset(&GameRoms,0,sizeof(GameRoms));
  try
  {
@@ -76,22 +52,10 @@ static void Load(GameFile *gf)
   size_t lo_size=0; uint8 *lo=GnGeoGetBiosLo(&lo_size);
   if(!lo || lo_size<0x10000) throw MDFN_Error(ENOENT,_("Unable to load 000-lo.lo BIOS."));
   GnGeoCoreSetRoms(&GameRoms,lo);
-#ifdef GNGEO_CI_BACKTRACE
-  fprintf(stderr,"GNGEO_LOAD stage=set-roms\\n");
-#endif
   if(GnGeoCoreInitRoms()!=0) throw MDFN_Error(EINVAL,_("Unable to initialize Neo Geo ROM set."));
-#ifdef GNGEO_CI_BACKTRACE
-  fprintf(stderr,"GNGEO_LOAD stage=init-roms\\n");
-#endif
   init_neo();
-#ifdef GNGEO_CI_BACKTRACE
-  fprintf(stderr,"GNGEO_LOAD stage=init-neo\\n");
-#endif
   setup_misc_patch(GameRoms.info.name);
   StateBlob.resize(GnGeoCoreStateSize());
-#ifdef GNGEO_CI_BACKTRACE
-  fprintf(stderr,"GNGEO_LOAD stage=complete\\n");
-#endif
  }
  catch(...)
  {
@@ -101,11 +65,6 @@ static void Load(GameFile *gf)
 
 static bool TestMagic(GameFile *gf)
 {
-#ifdef GNGEO_CI_BACKTRACE
- if(gf)
-  fprintf(stderr, "GNGEO_TESTMAGIC dir=%s fbase=%s\\n",
-          gf->outside.dir.c_str(), gf->outside.fbase.c_str());
-#endif
  return GnGeoHasDriver(gf);
 }
 
@@ -140,16 +99,6 @@ static void Emulate(EmulateSpecStruct *espec){
  espec->MasterCycles=200000;
 }
 
-#ifdef GNGEO_CI_STATE_TRACE
-static unsigned GnGeoStateSaveCount;
-static unsigned GnGeoStateLoadCount;
-static uint32_t GnGeoStateHash(const uint8 *data,size_t size)
-{
- uint32_t h=2166136261u;
- for(size_t i=0;i<size;i++){h^=data[i];h*=16777619u;}
- return h;
-}
-#endif
 
 static void StateAction(StateMem *sm,const unsigned load,const bool data_only){
 #ifdef GNGEO_CI_STATE_TRACE
