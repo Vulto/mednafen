@@ -39,7 +39,7 @@ jobs:
 
       - name: Build Mednafen + GnGeo only
         run: |
-          make -C src -j"$(nproc)" mednafen
+          make -j"$(nproc)"
 
       - name: Neo Geo KOF 98 runtime test
         run: |
