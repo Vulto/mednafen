@@ -25,79 +25,83 @@ bool GnGeoLoadBiosLo(GameFile *gf)
         archive.reset(ArchiveReader::Open(gf->outside.vfs, path));
     }
 
-    if(!archive)
-        return false;
-
-    std::unique_ptr<Stream> stream;
-
-    try
+    if(archive)
     {
-        stream.reset(archive->open("000-lo.lo", VirtualFS::MODE_READ));
-    }
-    catch(const MDFN_Error&)
-    {
-        stream.reset();
-    }
-
-    if(!stream)
-    {
+        std::unique_ptr<Stream> stream;
         try
         {
-            stream.reset(archive->open("/000-lo.lo", VirtualFS::MODE_READ));
+            stream.reset(archive->open("000-lo.lo", VirtualFS::MODE_READ));
         }
-        catch(const MDFN_Error&)
-        {
-            stream.reset();
-        }
-    }
+        catch(const MDFN_Error&) { stream.reset(); }
 
-    if(!stream)
-    {
-        for(size_t i = 0; i < archive->num_files(); i++)
+        if(!stream)
         {
-            const std::string *path = archive->get_file_path(i);
-            if(path == nullptr)
-                continue;
-            if(*path != "000-lo.lo" && *path != "/000-lo.lo")
-                continue;
             try
             {
-                stream.reset(archive->open(i));
+                stream.reset(archive->open("/000-lo.lo", VirtualFS::MODE_READ));
             }
-            catch(const MDFN_Error&)
+            catch(const MDFN_Error&) { stream.reset(); }
+        }
+
+        if(!stream)
+        {
+            for(size_t i = 0; i < archive->num_files(); i++)
             {
-                stream.reset();
+                const std::string *path = archive->get_file_path(i);
+                if(path == nullptr || (*path != "000-lo.lo" && *path != "/000-lo.lo"))
+                    continue;
+                try
+                {
+                    stream.reset(archive->open(i));
+                }
+                catch(const MDFN_Error&) { stream.reset(); }
+                if(stream) break;
             }
-            break;
+        }
+
+        if(stream)
+        {
+            GnGeoLoBiosSize = (size_t)stream->size();
+            GnGeoLoBios = (uint8 *)malloc(GnGeoLoBiosSize);
+            if(!GnGeoLoBios)
+            {
+                GnGeoLoBiosSize = 0;
+                return false;
+            }
+
+            if(stream->read(GnGeoLoBios, GnGeoLoBiosSize) == GnGeoLoBiosSize)
+                return true;
+
+            GnGeoFreeBiosLo();
         }
     }
-    if(!stream)
+
+    std::unique_ptr<Stream> open_bios_bin;
+    try
+    {
+        open_bios_bin.reset(
+            NVFS.open(
+                MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "neogeo.bin"),
+                VirtualFS::MODE_READ));
+    }
+    catch(const MDFN_Error&) { open_bios_bin.reset(); }
+
+    if(!open_bios_bin || open_bios_bin->size() < 0x10000)
         return false;
 
-    GnGeoLoBiosSize = (size_t)stream->size();
+    GnGeoLoBiosSize = (size_t)open_bios_bin->size();
     GnGeoLoBios = (uint8 *)malloc(GnGeoLoBiosSize);
-
     if(!GnGeoLoBios)
     {
         GnGeoLoBiosSize = 0;
         return false;
     }
 
-    if(stream->read(GnGeoLoBios, GnGeoLoBiosSize) != GnGeoLoBiosSize)
+    if(open_bios_bin->read(GnGeoLoBios, GnGeoLoBiosSize) != GnGeoLoBiosSize)
     {
         GnGeoFreeBiosLo();
         return false;
     }
 
     return true;
-}
-
-void GnGeoFreeBiosLo(void)
-{
-    free(GnGeoLoBios);
-    GnGeoLoBios = nullptr;
-    GnGeoLoBiosSize = 0;
-}
-
-uint8 *GnGeoGetBiosLo(size_t *size) { if(size) *size=GnGeoLoBiosSize; return GnGeoLoBios; }
 }
