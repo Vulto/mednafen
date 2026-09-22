@@ -336,7 +336,10 @@ bool Mednafen::GnGeoHasDriver(Mednafen::GameFile *gf)
 bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system, COUNTRY country)
 {
     memset(roms, 0, sizeof(*roms));
-    if(!gf || !gf->vfs || !gf->outside.vfs) return false;
+#ifdef GNGEO_CI_BACKTRACE
+    fprintf(stderr, "GNGEO_LOAD start gf=%d vfs=%d outside_vfs=%d fbase=%s\\n", gf ? 1 : 0, (gf && gf->vfs) ? 1 : 0, (gf && gf->outside.vfs) ? 1 : 0, (gf ? gf->outside.fbase.c_str() : ""));
+#endif
+    if(!gf || !gf->outside.vfs) return false;
 
     Uint32 drv_size=0;
     std::vector<Uint8> external_driver;
