@@ -142,6 +142,13 @@ unsigned int reg68k_external_execute(unsigned int clocks)
 	//printf("PC=%x\n",regs.pc);
 #else
         if (!list) {
+#ifdef GNGEO_CI_CPU_TRACE
+          if (pc24 == 0x122) {
+            Uint8 *raw = mem68k_memptr[(pc24 >> 12) & 0xfff](pc24);
+            fprintf(stderr, "GNGEO_PC122_EXEC raw=%02x%02x%02x%02x%02x%02x word=%04x\\n",
+                    raw[0],raw[1],raw[2],raw[3],raw[4],raw[5],fetchword(pc24));
+          }
+#endif
           /* LOG_USER(("Making IPC list @ %08x", pc24)); */
 	    //printf("Making IPC list @ %08x\n", pc24);
           list = cpu68k_makeipclist(pc24);
