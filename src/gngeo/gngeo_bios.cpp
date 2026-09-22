@@ -77,6 +77,7 @@ bool GnGeoLoadBiosLo(GameFile *gf)
     }
 
     return false;
+}
 
 void GnGeoFreeBiosLo(void)
 {
