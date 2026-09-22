@@ -113,14 +113,6 @@ unsigned GnGeoCoreGenerateAudio(int16_t *out,unsigned frames)
  unsigned n=frames; if(n>8192)n=8192;
  YM2610Update_stream((int)n);
  memcpy(out,play_buffer,n*2*sizeof(int16_t));
-#ifdef GNGEO_CI_AUDIO_TRACE
- GnGeoAudioCalls++;
- if((GnGeoAudioCalls%60)==0) {
-  unsigned nonzero=0;
-  for(unsigned i=0;i<n*2;i++) if(play_buffer[i]) nonzero++;
-  fprintf(stderr,"GNGEO_AUDIO call=%u frames=%u nonzero=%u\\n",GnGeoAudioCalls,n,nonzero);
- }
-#endif
  return n;
 }
 
