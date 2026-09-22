@@ -204,7 +204,7 @@ jobs:
           cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
           set +e
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/input.log" 2>&1 &
+            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip" >"$TEST_DIR/input.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
@@ -265,7 +265,7 @@ jobs:
             test -n "$wid"
             xdotool windowfocus "$wid"
             sleep 2
-            xdotool key --window "$wid" F8
+            xdotool key --window "$wid" j
             sleep 0.5
             xdotool key --window "$wid" Return
             sleep 6
