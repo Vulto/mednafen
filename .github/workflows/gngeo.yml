@@ -35,7 +35,7 @@ jobs:
 
       - name: Configure GnGeo
         run: |
-          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE" ./configure --enable-gngeo --disable-debugger
+          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE" ./configure --enable-gngeo --disable-debugger
 
       - name: Build
         run: |
@@ -72,7 +72,7 @@ jobs:
             sleep 0.5
             xdotool key --window "$wid" Return
             sleep 8
-            kill -KILL "$pid" 2>/dev/null || true
+            kill -TERM "$pid" 2>/dev/null || true
             wait "$pid" || true
           '
           set -e
