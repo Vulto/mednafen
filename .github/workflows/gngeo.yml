@@ -34,9 +34,12 @@ jobs:
         with:
           path: |
             **/*.o
+            **/*.lo
+            **/*.a
+            **/*.la
             **/.deps
+            **/.libs
             src/mednafen
-            src/.libs
           key: gngeo-build-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             gngeo-build-${{ runner.os }}-
