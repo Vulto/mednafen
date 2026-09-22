@@ -252,13 +252,6 @@ void cpu_68k_init(void)
 
     cpu68k_clearcache();
 
-#ifndef WORDS_BIGENDIAN
-    swap_memory(memory.rom.cpu_m68k.p, memory.rom.cpu_m68k.size);
-    if(memory.rom.bios_m68k.p[0] == 0x10)
-        swap_memory(memory.rom.bios_m68k.p, memory.rom.bios_m68k.size);
-    swap_memory(memory.game_vector, 0x80);
-#endif
-
     cpu68k_ram = memory.ram;
     cpu68k_rom = memory.rom.cpu_m68k.p;
     cpu68k_romlen = memory.rom.cpu_m68k.size < 0x100000 ?
