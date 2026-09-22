@@ -270,6 +270,31 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
             } catch(const Mednafen::MDFN_Error&) {}
         }
     }
+
+    if(!stream) {
+        std::string wanted = name;
+        for(char &ch : wanted)
+            ch = (char)std::tolower((unsigned char)ch);
+        for(size_t i = 0; i < archive->num_files(); i++) {
+            const std::string *entry = archive->get_file_path(i);
+            if(!entry) continue;
+            std::string candidate = *entry;
+            for(char &ch : candidate)
+                ch = (char)std::tolower((unsigned char)ch);
+            if(candidate == wanted) {
+                try {
+                    stream.reset(archive->open(i));
+                } catch(const Mednafen::MDFN_Error&) {}
+                if(stream) break;
+            }
+#ifdef GNGEO_CI_BACKTRACE
+            fprintf(stderr, "GNGEO_DRIVER file=%s\\n", entry->c_str());
+#endif
+        }
+    }
+#ifdef GNGEO_CI_BACKTRACE
+    fprintf(stderr, "GNGEO_DRIVER stream=%d\\n", stream ? 1 : 0);
+#endif
     if(!stream) return false;
 
     uint64 size = stream->size();
