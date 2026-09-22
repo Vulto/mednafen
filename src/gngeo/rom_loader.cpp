@@ -360,9 +360,28 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     const Uint8 *dp=drv_data, *de=drv_data+drv_size;
     auto read_drv=[&](void *dst,size_t n)->bool { if((size_t)(de-dp)<n)return false; memcpy(dst,dp,n);dp+=n;return true; };
     ROM_DEF drv_def; memset(&drv_def,0,sizeof(drv_def));
-    if(!read_drv(drv_def.name,sizeof(drv_def.name)) || !read_drv(drv_def.parent,sizeof(drv_def.parent)) || !read_drv(drv_def.longname,sizeof(drv_def.longname)) || !read_drv(&drv_def.year,sizeof(drv_def.year))) return false;
-    for(unsigned i=0;i<10;i++) if(!read_drv(&drv_def.romsize[i],sizeof(drv_def.romsize[i]))) return false;
-    if(!read_drv(&drv_def.nb_romfile,sizeof(drv_def.nb_romfile)) || drv_def.nb_romfile>32) return false;
+    if(!read_drv(drv_def.name,sizeof(drv_def.name)) || !read_drv(drv_def.parent,sizeof(drv_def.parent)) || !read_drv(drv_def.longname,sizeof(drv_def.longname)) || !read_drv(&drv_def.year,sizeof(drv_def.year))) {
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_LOAD driver_header_parse_failed size=%llu remaining=%llu\\n", (unsigned long long)size, (unsigned long long)(de-dp));
+#endif
+        return false;
+    }
+    for(unsigned i=0;i<10;i++) if(!read_drv(&drv_def.romsize[i],sizeof(drv_def.romsize[i]))) {
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_LOAD driver_region_sizes_parse_failed index=%u remaining=%llu\\n", i, (unsigned long long)(de-dp));
+#endif
+        return false;
+    }
+    if(!read_drv(&drv_def.nb_romfile,sizeof(drv_def.nb_romfile)) || drv_def.nb_romfile>32) {
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_LOAD driver_count_parse_failed count=%u remaining=%llu\\n", drv_def.nb_romfile, (unsigned long long)(de-dp));
+#endif
+        return false;
+    }
+#ifdef GNGEO_CI_BACKTRACE
+    fprintf(stderr, "GNGEO_LOAD driver name=%s parent=%s year=%u romfiles=%u size=%llu\\n",
+        drv_def.name, drv_def.parent, drv_def.year, drv_def.nb_romfile, (unsigned long long)size);
+#endif
     for(unsigned i=0;i<drv_def.nb_romfile;i++) {
         auto &r=drv_def.rom[i];
         Uint8 padding[3];
@@ -372,7 +391,16 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
            !read_drv(&r.src,sizeof(r.src)) ||
            !read_drv(&r.dest,sizeof(r.dest)) ||
            !read_drv(&r.size,sizeof(r.size)) ||
-           !read_drv(&r.crc,sizeof(r.crc))) return false;
+           !read_drv(&r.crc,sizeof(r.crc))) {
+#ifdef GNGEO_CI_BACKTRACE
+            fprintf(stderr, "GNGEO_LOAD driver_rom_parse_failed index=%u remaining=%llu\\n", i, (unsigned long long)(de-dp));
+#endif
+            return false;
+        }
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_LOAD rom[%u] file=%s region=%u src=%u dest=%u size=%u crc=%08x\\n",
+            i, r.filename, r.region, r.src, r.dest, r.size, r.crc);
+#endif
     }
 
     roms->info.name = strdup(drv_def.name);
