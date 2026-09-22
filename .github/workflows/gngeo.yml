@@ -70,7 +70,7 @@ jobs:
             pid=$!
             wid=""
             for i in $(seq 1 30); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
@@ -104,7 +104,7 @@ jobs:
             pid=$!
             wid=""
             for i in $(seq 1 60); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
@@ -152,7 +152,7 @@ jobs:
             pid=$!
             wid=""
             for i in $(seq 1 60); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
@@ -182,7 +182,7 @@ jobs:
             pid=$!
             wid=""
             for i in $(seq 1 60); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
@@ -225,7 +225,7 @@ jobs:
             pid=$!
             wid=""
             for i in $(seq 1 60); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
