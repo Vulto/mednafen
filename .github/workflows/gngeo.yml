@@ -36,28 +36,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ngdevkit ngdevkit-gngeo
 
-      - name: Restore build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            **/*.o
-            **/*.lo
-            **/*.a
-            **/*.la
-            **/.deps
-            **/.libs
-            src/mednafen
-          key: gngeo-build-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            gngeo-build-${{ runner.os }}-
-
       - name: Restore compiler cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ccache
-          key: gngeo-ccache-${{ runner.os }}-${{ hashFiles('src/gngeo/**', 'src/Makefile.am', 'configure.ac', 'configure.in', 'Makefile.am') }}
+          key: gngeo-ccache-${{ runner.os }}-gcc-${{ hashFiles('configure.ac', 'src/Makefile.am', 'src/gngeo/Makefile.am') }}
           restore-keys: |
-            gngeo-ccache-${{ runner.os }}-
+            gngeo-ccache-${{ runner.os }}-gcc-
+
+      - name: Configure ccache
+        run: |
+          ccache --set-config=cache_dir=${HOME}/.cache/ccache
+          ccache --set-config=max_size=2G
+          ccache --set-config=compression=true
+          ccache --set-config=base_dir=${GITHUB_WORKSPACE}
+          ccache --show-config
 
       - name: Prepare autotools
         run: |
@@ -91,20 +84,6 @@ jobs:
             exit 1
           fi
           ccache --show-stats
-
-      - name: Save build cache
-        if: success()
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            **/*.o
-            **/*.lo
-            **/*.a
-            **/*.la
-            **/.deps
-            **/.libs
-            src/mednafen
-          key: gngeo-build-${{ runner.os }}-${{ github.sha }}
 
       - name: Build open Neo Geo test ROMs
         run: |
