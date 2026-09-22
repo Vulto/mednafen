@@ -76,34 +76,6 @@ bool GnGeoLoadBiosLo(GameFile *gf)
         }
     }
 
-    std::unique_ptr<Stream> open_bios_bin;
-    try
-    {
-        open_bios_bin.reset(
-            NVFS.open(
-                MDFN_MakeFName(MDFNMKF_FIRMWARE, 0, "neogeo.bin"),
-                VirtualFS::MODE_READ));
-    }
-    catch(const MDFN_Error&) { open_bios_bin.reset(); }
-
-    if(!open_bios_bin || open_bios_bin->size() < 0x10000)
-        return false;
-
-    GnGeoLoBiosSize = (size_t)open_bios_bin->size();
-    GnGeoLoBios = (uint8 *)malloc(GnGeoLoBiosSize);
-    if(!GnGeoLoBios)
-    {
-        GnGeoLoBiosSize = 0;
-        return false;
-    }
-
-    if(open_bios_bin->read(GnGeoLoBios, GnGeoLoBiosSize) != GnGeoLoBiosSize)
-    {
-        GnGeoFreeBiosLo();
-        return false;
-    }
-
-    return true;
-}
+    return false;
 
 }
