@@ -11,7 +11,6 @@ extern size_t ym2610_state_size(void); extern size_t GnGeoYM2610TimerStateSize(v
 extern int Fc,LastLine,SkipFrame,SkipNext;
 
 static size_t S=0;
-static void X(void **pp,size_t n,int load){static unsigned char *q; (void)q;(void)pp;(void)n;(void)load;}
 #define CPY(q,p,n,load) do{ if(load) memcpy((p),(q),(n)); else memcpy((q),(p),(n)); (q)+=(n); }while(0)
 
 size_t GnGeoCoreStateSize(void)
