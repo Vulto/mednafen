@@ -41,6 +41,7 @@ mednafen_SOURCES += \
         gngeo/core/mame_layer.c \
         gngeo/core/mame_layer.h \
         gngeo/core/generator68k_interf.c \
+        gngeo/core/generator68k/generator.h \
         gngeo/core/mamez80_interf.c \
         gngeo/core/generator68k/cpu68k.c \
         gngeo/core/generator68k/reg68k.c \
