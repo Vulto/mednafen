@@ -46,7 +46,7 @@ jobs:
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware" "$TEST_DIR"
-          curl -fL --retry 3 --connect-timeout 15 --max-time 180 -o "$TEST_DIR/kof2003.zip" https://archive.org/download/neo-geo-aes-romset/kof2003.zip
+          curl -fL --retry 8 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 -o "$TEST_DIR/kof2003.zip" "https://archive.org/download/neo-geo-aes-romset/kof2003.zip?download=1"
           test "$(sha1sum "$TEST_DIR/kof2003.zip" | awk '{print $1}')" = "f8b9d5a5166746f84ff424baefd0b95c99646ec3"
           unzip -t "$TEST_DIR/kof2003.zip" >/dev/null
           unzip -p "$TEST_DIR/kof2003.zip" 000-lo.lo > "$TEST_DIR/000-lo.lo"
@@ -77,7 +77,8 @@ jobs:
           '
           set -e
           cat "$TEST_DIR/mednafen.log"
-          grep -q 'Selecting Game Vector' "$TEST_DIR/mednafen.log"
+          grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/mednafen.log"
+          grep -q 'Selecting Bios Vector' "$TEST_DIR/mednafen.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/mednafen.log"
           test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/mednafen.log")" -ge 10
           test "$(grep 'GNGEO_FRAME' "$TEST_DIR/mednafen.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 4
@@ -138,7 +139,7 @@ jobs:
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           set +e
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 1 -sound.driver sdl "$TEST_DIR/kof2003.zip" >"$TEST_DIR/audio.log" 2>&1 &
+            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 1 -sound.driver sdl "$TEST_DIR/kof2003.zip" >"$TEST_DIR/audio.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
@@ -168,7 +169,7 @@ jobs:
           mkdir -p "$MEDNAFEN_HOME/firmware"
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -force_module gngeo -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/state.log" 2>&1 &
+            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof2003.zip" >"$TEST_DIR/state.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
