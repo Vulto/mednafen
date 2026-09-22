@@ -55,6 +55,7 @@ jobs:
           cd "$RUNNER_TEMP/ngdevkit-examples"
           autoreconf -iv
           ./configure
+          make -C 01-helloworld build/.generated
           make -C 01-helloworld build/rom/01_helloworld-p1.p1 build/rom/01_helloworld-s1.s1 build/rom/01_helloworld-c1.c1 build/rom/01_helloworld-c2.c2
           mkdir -p "$RUNNER_TEMP/01_helloworld"
           cp 01-helloworld/build/rom/01_helloworld-p1.p1 "$RUNNER_TEMP/01_helloworld/"
