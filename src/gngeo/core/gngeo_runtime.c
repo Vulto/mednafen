@@ -156,7 +156,7 @@ int GnGeoRunFrame(void)
  SkipFrame=0; current_line=0; LastLine=0;
  for(int i=0;i<256;i++){ cpu_z80_run(zslice); my_timer(); }
  for(int i=0;i<264;i++){ tm=cpu_68k_run(slice-tm); if(UpdateScanline()) cpu_68k_interrupt(2); }
- tm=cpu_68k_run(200000-tm);
+ tm=cpu_68k_run(slice-tm);
  if(LastLine<21) draw_screen(); else draw_screen_scanline(LastLine-21,262,1);
  memory.watchdog++; if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;} cpu_68k_interrupt(1);
  pd4990a_addretrace();
