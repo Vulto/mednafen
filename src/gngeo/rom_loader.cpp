@@ -396,6 +396,9 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(drv_def.romsize[REGION_FIXED_LAYER_BIOS]) { roms->info.flags |= HAS_CUSTOM_SFIX_BIOS; if(GnGeoAllocateRegion(&roms->bios_sfix, drv_def.romsize[REGION_FIXED_LAYER_BIOS], REGION_FIXED_LAYER_BIOS) != 0) return Fail(); }
     std::string game_path = gf->outside.dir.empty() ? gf->outside.fbase + ".zip" : gf->outside.dir + "/" + gf->outside.fbase + ".zip";
     std::unique_ptr<Mednafen::ArchiveReader> game_archive(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
+#ifdef GNGEO_CI_BACKTRACE
+    fprintf(stderr, "GNGEO_LOAD game_archive=%s opened=%d\\n", game_path.c_str(), game_archive ? 1 : 0);
+#endif
     if(!game_archive) return Fail();
 
     std::unique_ptr<Mednafen::ArchiveReader> parent_archive;
@@ -410,6 +413,10 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
         const auto &r = drv_def.rom[i];
         if(GnGeoLoadRegion(game_archive.get(), roms, r.region, r.src, r.dest, r.size, r.crc, r.filename)) continue;
         if(parent_archive && GnGeoLoadRegion(parent_archive.get(), roms, r.region, r.src, r.dest, r.size, r.crc, r.filename)) continue;
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_LOAD missing file=%s region=%u src=%u dest=%u size=%u crc=%08x parent=%s\\n",
+            r.filename, r.region, r.src, r.dest, r.size, r.crc, parent_archive ? "1" : "0");
+#endif
         if(r.region != REGION_FIXED_LAYER_BIOS && r.region != REGION_AUDIO_CPU_BIOS && r.region != REGION_MAIN_CPU_BIOS)
         {
             MDFN_printf("GnGeo loader: missing ROM %s (region %u, size %u, CRC %08x)\n", r.filename, r.region, r.size, r.crc);
