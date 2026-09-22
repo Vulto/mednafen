@@ -175,6 +175,21 @@ static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveRead
            (expected_crc == 0 || GnGeoCheckCrc(stream.get(), expected_crc))) return stream;
     }
     catch(const Mednafen::MDFN_Error&) {}
+    const std::string slash_name = std::string("/") + name;
+    for(size_t i = 0; i < archive->num_files(); i++)
+    {
+        const std::string *path = archive->get_file_path(i);
+        if(path == nullptr || (*path != name && *path != slash_name)) continue;
+        if(expected_size != 0 && archive->get_file_size(i) != expected_size) return nullptr;
+        try
+        {
+            std::unique_ptr<Mednafen::Stream> stream(archive->open(i));
+            if(stream && (expected_crc == 0 || GnGeoCheckCrc(stream.get(), expected_crc))) return stream;
+        }
+        catch(const Mednafen::MDFN_Error&) {}
+        return nullptr;
+    }
+
     for(size_t i = 0; i < archive->num_files(); i++)
     {
         if(expected_size != 0 && archive->get_file_size(i) != expected_size) continue;
