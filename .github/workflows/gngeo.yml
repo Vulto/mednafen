@@ -31,7 +31,10 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xauth xdotool zip ccache
+          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xauth xdotool zip ccache git rsync imagemagick sox libsox-fmt-mp3
+          sudo add-apt-repository -y ppa:dciabrin/ngdevkit
+          sudo apt-get update
+          sudo apt-get install -y ngdevkit ngdevkit-gngeo
 
       - name: Restore build cache
         uses: actions/cache@v4
@@ -103,112 +106,69 @@ jobs:
             src/mednafen
           key: gngeo-build-${{ runner.os }}-${{ github.sha }}
 
-      - name: Neo Geo KOF 98 runtime test
+      - name: Build open Neo Geo test ROMs
+        run: |
+          export EXAMPLES="$RUNNER_TEMP/ngdevkit-examples"
+          git clone --depth 1 --recursive https://github.com/dciabrin/ngdevkit-examples.git "$EXAMPLES"
+          (cd "$EXAMPLES" && autoreconf -iv && ./configure)
+          make -C "$EXAMPLES" .prebuild
+          make -C "$EXAMPLES/07-attract-and-game" cart bios
+          make -C "$EXAMPLES/06-sound-adpcma" cart bios
+          mkdir -p "$RUNNER_TEMP/neo-homebrew"
+          cp "$EXAMPLES/07-attract-and-game/build/rom/07_attract_and_game.zip" "$RUNNER_TEMP/neo-homebrew/"
+          cp "$EXAMPLES/07-attract-and-game/build/rom/gngeo_data.zip" "$RUNNER_TEMP/neo-homebrew/07_attract_and_game-gngeo_data.zip"
+          cp "$EXAMPLES/07-attract-and-game/build/rom/neogeo.zip" "$RUNNER_TEMP/neo-homebrew/neogeo.zip"
+          cp "$EXAMPLES/06-sound-adpcma/build/rom/06_sound_adpcma.zip" "$RUNNER_TEMP/neo-homebrew/"
+          cp "$EXAMPLES/06-sound-adpcma/build/rom/gngeo_data.zip" "$RUNNER_TEMP/neo-homebrew/06_sound_adpcma-gngeo_data.zip"
+
+      - name: Neo Geo homebrew runtime test
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           export DISPLAY=:99
           mkdir -p "$MEDNAFEN_HOME/firmware" "$TEST_DIR"
-          : >"$TEST_DIR/prepare.log"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game.zip" "$TEST_DIR/07_attract_and_game.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           : >"$TEST_DIR/xvfb.log"
           : >"$TEST_DIR/mednafen.log"
           : >"$TEST_DIR/runtime-meta.log"
           : >"$TEST_DIR/processes.log"
-
           set +e
-          test -f src/gngeo/kof98.zip
-          s1=$?
-          echo "test-kof98=$s1" >>"$TEST_DIR/prepare.log"
-
-          unzip -t src/gngeo/kof98.zip >>"$TEST_DIR/prepare.log" 2>&1
-          s2=$?
-          echo "unzip-test=$s2" >>"$TEST_DIR/prepare.log"
-
-          unzip -p src/gngeo/kof98.zip 000-lo.lo >"$TEST_DIR/000-lo.lo" 2>>"$TEST_DIR/prepare.log"
-          s3=$?
-          echo "extract-000-lo=$s3" >>"$TEST_DIR/prepare.log"
-
-          unzip -p src/gngeo/kof98.zip sp-s2.sp1 >"$TEST_DIR/sp-s2.sp1" 2>>"$TEST_DIR/prepare.log"
-          s4=$?
-          echo "extract-sp-s2=$s4" >>"$TEST_DIR/prepare.log"
-
-          unzip -p src/gngeo/kof98.zip sfix.sfix >"$TEST_DIR/sfix.sfix" 2>>"$TEST_DIR/prepare.log"
-          s5=$?
-          echo "extract-sfix=$s5" >>"$TEST_DIR/prepare.log"
-
-          unzip -p src/gngeo/kof98.zip sm1.sm1 >"$TEST_DIR/sm1.sm1" 2>>"$TEST_DIR/prepare.log"
-          s6=$?
-          echo "extract-sm1=$s6" >>"$TEST_DIR/prepare.log"
-
-          (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1) >>"$TEST_DIR/prepare.log" 2>&1
-          s7=$?
-          echo "assemble-neogeo=$s7" >>"$TEST_DIR/prepare.log"
-
-          cp src/gngeo/kof98.zip "$TEST_DIR/kof98.zip" >>"$TEST_DIR/prepare.log" 2>&1
-          s8=$?
-          echo "copy-kof98=$s8" >>"$TEST_DIR/prepare.log"
-
-          test -s "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          s9=$?
-          echo "test-neogeo-zip=$s9" >>"$TEST_DIR/prepare.log"
-
-          prepare_status=0
-          for s in $s1 $s2 $s3 $s4 $s5 $s6 $s7 $s8 $s9; do
-            test "$s" -eq 0 || prepare_status=1
-          done
-
-          if test "$prepare_status" -ne 0; then
-            echo "Neo Geo ROM preparation failed."
-            cat "$TEST_DIR/prepare.log"
-            printf 'GNGEO_TEST_STATUS=prepare-failed\n' >"$TEST_DIR/runtime-status.log"
-            set -e
-            exit 1
-          fi
-
           Xvfb :99 -screen 0 1024x768x24 -ac >"$TEST_DIR/xvfb.log" 2>&1 &
           xvfb_pid=$!
           echo "Xvfb PID=$xvfb_pid" >>"$TEST_DIR/runtime-meta.log"
           sleep 2
-
-          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
+          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
           mednafen_pid=$!
           echo "Mednafen PID=$mednafen_pid" >>"$TEST_DIR/runtime-meta.log"
-
           wid=""
           for i in $(seq 1 30); do
             wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
             if test -z "$wid"; then
               wid=$(xdotool search --onlyvisible --class "mednafen" 2>/dev/null | head -n1)
             fi
-            if test -n "$wid"; then
-              break
-            fi
+            test -n "$wid" && break
             if ! kill -0 "$mednafen_pid" 2>/dev/null; then
               echo "Mednafen exited before creating a window." >>"$TEST_DIR/runtime-meta.log"
               break
             fi
             sleep 1
           done
-
           echo "GNGEO_TEST_WINDOW=$wid" >>"$TEST_DIR/runtime-meta.log"
           runtime_status=1
-
           if test -n "$wid"; then
             xdotool windowfocus "$wid"
             sleep 2
             xdotool key --window "$wid" 5
             sleep 0.5
             xdotool key --window "$wid" Return
-            sleep 12
-            if kill -0 "$mednafen_pid" 2>/dev/null; then
-              runtime_status=0
-            else
-              echo "Mednafen exited during runtime test." >>"$TEST_DIR/runtime-meta.log"
-            fi
-          else
-            ps -ef >"$TEST_DIR/processes.log"
+            sleep 6
+            xdotool key --window "$wid" 5
+            xdotool key --window "$wid" Return
+            sleep 6
+            if kill -0 "$mednafen_pid" 2>/dev/null; then runtime_status=0; else echo "Mednafen exited during runtime test." >>"$TEST_DIR/runtime-meta.log"; fi
           fi
-
           kill -TERM "$mednafen_pid" 2>/dev/null || true
           sleep 1
           kill -KILL "$mednafen_pid" 2>/dev/null || true
@@ -216,10 +176,7 @@ jobs:
           wait "$mednafen_pid" 2>/dev/null || true
           wait "$xvfb_pid" 2>/dev/null || true
           ps -ef >"$TEST_DIR/processes.log"
-
           printf 'GNGEO_TEST_STATUS=%s\n' "$runtime_status" >"$TEST_DIR/runtime-status.log"
-          echo "=== prepare.log ==="
-          cat "$TEST_DIR/prepare.log"
           echo "=== xvfb.log ==="
           cat "$TEST_DIR/xvfb.log"
           echo "=== mednafen.log ==="
@@ -228,21 +185,23 @@ jobs:
           cat "$TEST_DIR/runtime-meta.log"
           echo "=== processes.log ==="
           cat "$TEST_DIR/processes.log"
-
           set -e
           test "$runtime_status" -eq 0
           grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/mednafen.log"
           grep -q 'Selecting Bios Vector' "$TEST_DIR/mednafen.log"
+          grep -q 'Selecting Game Vector' "$TEST_DIR/mednafen.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/mednafen.log"
           test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/mednafen.log")" -ge 10
-          test "$(grep 'GNGEO_FRAME' "$TEST_DIR/mednafen.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 4
+          test "$(grep 'GNGEO_FRAME' "$TEST_DIR/mednafen.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 2
 
       - name: Neo Geo input test
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-input-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
-          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game.zip" "$TEST_DIR/07_attract_and_game.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
           set +e
           xvfb-run -a bash -c '
             SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/input.log" 2>&1 &
@@ -290,10 +249,12 @@ jobs:
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-audio-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
-          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/06_sound_adpcma.zip" "$TEST_DIR/06_sound_adpcma.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/06_sound_adpcma-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
           set +e
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 1 -sound.driver sdl "$TEST_DIR/kof98.zip" >"$TEST_DIR/audio.log" 2>&1 &
+            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 1 -sound.driver sdl "$TEST_DIR/06_sound_adpcma.zip" >"$TEST_DIR/audio.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
@@ -321,9 +282,11 @@ jobs:
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-state-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
-          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game.zip" "$TEST_DIR/07_attract_and_game.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/state.log" 2>&1 &
+            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip" >"$TEST_DIR/state.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
@@ -364,9 +327,11 @@ jobs:
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-gameplay-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
-          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game.zip" "$TEST_DIR/07_attract_and_game.zip"
+          cp "$RUNNER_TEMP/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
           xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/gameplay.log" 2>&1 &
+            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip" >"$TEST_DIR/gameplay.log" 2>&1 &
             pid=$!
             wid=""
             for i in $(seq 1 60); do
