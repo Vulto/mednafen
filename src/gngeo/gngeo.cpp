@@ -88,20 +88,7 @@ static void Load(GameFile *gf)
 
 static bool TestMagic(GameFile *gf)
 {
- if(!gf || gf->outside.vfs == nullptr || gf->outside.fbase.empty()) return false;
-
- Uint32 size = 0;
- if(GnGeoFindDriver(gf->outside.fbase.c_str(), &size) != nullptr && size != 0)
-  return true;
-
- std::string lower = gf->outside.fbase;
- for(char &c : lower)
-  c = (char)std::tolower((unsigned char)c);
-
- if(lower != gf->outside.fbase && GnGeoFindDriver(lower.c_str(), &size) != nullptr && size != 0)
-  return true;
-
- return false;
+ return GnGeoHasDriver(gf);
 }
 
 static void CloseGame(){ GnGeoCoreShutdown(); StateBlob.clear(); GnGeoFreeRoms(&GameRoms); GnGeoFreeBiosLo(); memset(&GameRoms,0,sizeof(GameRoms)); }
