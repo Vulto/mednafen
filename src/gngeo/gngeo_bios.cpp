@@ -105,3 +105,5 @@ bool GnGeoLoadBiosLo(GameFile *gf)
 
     return true;
 }
+
+}
