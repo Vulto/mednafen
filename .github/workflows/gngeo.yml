@@ -95,9 +95,12 @@ jobs:
         with:
           path: |
             **/*.o
+            **/*.lo
+            **/*.a
+            **/*.la
             **/.deps
+            **/.libs
             src/mednafen
-            src/.libs
           key: gngeo-build-${{ runner.os }}-${{ github.sha }}
 
       - name: Neo Geo KOF 98 runtime test
@@ -106,62 +109,73 @@ jobs:
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           export DISPLAY=:99
           mkdir -p "$MEDNAFEN_HOME/firmware" "$TEST_DIR"
-          test -f src/gngeo/kof98.zip
-          unzip -t src/gngeo/kof98.zip >/dev/null
-          unzip -p src/gngeo/kof98.zip 000-lo.lo > "$TEST_DIR/000-lo.lo"
-          unzip -p src/gngeo/kof98.zip sp-s2.sp1 > "$TEST_DIR/sp-s2.sp1"
-          unzip -p src/gngeo/kof98.zip sfix.sfix > "$TEST_DIR/sfix.sfix"
-          unzip -p src/gngeo/kof98.zip sm1.sm1 > "$TEST_DIR/sm1.sm1"
-          (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1)
-          cp src/gngeo/kof98.zip "$TEST_DIR/kof98.zip"
-          command -v Xvfb
-          command -v xdotool
+          : >"$TEST_DIR/xvfb.log"
+          : >"$TEST_DIR/mednafen.log"
+          : >"$TEST_DIR/runtime-meta.log"
+          : >"$TEST_DIR/processes.log"
+          test -f src/gngeo/kof98.zip || exit 1
+          unzip -t src/gngeo/kof98.zip >/dev/null || exit 1
+          unzip -p src/gngeo/kof98.zip 000-lo.lo > "$TEST_DIR/000-lo.lo" || exit 1
+          unzip -p src/gngeo/kof98.zip sp-s2.sp1 > "$TEST_DIR/sp-s2.sp1" || exit 1
+          unzip -p src/gngeo/kof98.zip sfix.sfix > "$TEST_DIR/sfix.sfix" || exit 1
+          unzip -p src/gngeo/kof98.zip sm1.sm1 > "$TEST_DIR/sm1.sm1" || exit 1
+          (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1) || exit 1
+          cp src/gngeo/kof98.zip "$TEST_DIR/kof98.zip" || exit 1
           set +e
           Xvfb :99 -screen 0 1024x768x24 -ac >"$TEST_DIR/xvfb.log" 2>&1 &
           xvfb_pid=$!
           sleep 2
+          echo "Xvfb PID=$xvfb_pid" >>"$TEST_DIR/runtime-meta.log"
           env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
           mednafen_pid=$!
-          echo "$mednafen_pid" >"$TEST_DIR/mednafen.pid"
+          echo "Mednafen PID=$mednafen_pid" >>"$TEST_DIR/runtime-meta.log"
           wid=""
           for i in $(seq 1 30); do
             wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
-            test -n "$wid" && break
+            if test -n "$wid"; then
+              break
+            fi
+            if ! kill -0 "$mednafen_pid" 2>/dev/null; then
+              echo "Mednafen exited before creating a window." >>"$TEST_DIR/runtime-meta.log"
+              break
+            fi
             sleep 1
           done
-          echo "GNGEO_TEST_WINDOW=$wid" >"$TEST_DIR/runtime-meta.log"
-          if test -z "$wid"; then
-            echo "Mednafen window was not found." >>"$TEST_DIR/runtime-meta.log"
+          echo "GNGEO_TEST_WINDOW=$wid" >>"$TEST_DIR/runtime-meta.log"
+          runtime_status=1
+          if test -n "$wid"; then
+            xdotool windowfocus "$wid"
+            sleep 2
+            xdotool key --window "$wid" 5
+            sleep 0.5
+            xdotool key --window "$wid" Return
+            sleep 12
+            if kill -0 "$mednafen_pid" 2>/dev/null; then
+              runtime_status=0
+            else
+              echo "Mednafen exited during runtime test." >>"$TEST_DIR/runtime-meta.log"
+            fi
+          else
             ps -ef >"$TEST_DIR/processes.log"
-            kill "$mednafen_pid" 2>/dev/null || true
-            kill "$xvfb_pid" 2>/dev/null || true
-            wait "$mednafen_pid" 2>/dev/null || true
-            wait "$xvfb_pid" 2>/dev/null || true
-            exit 1
           fi
-          xdotool windowfocus "$wid"
-          sleep 2
-          xdotool key --window "$wid" 5
-          sleep 0.5
-          xdotool key --window "$wid" Return
-          sleep 12
           kill -TERM "$mednafen_pid" 2>/dev/null || true
           sleep 1
           kill -KILL "$mednafen_pid" 2>/dev/null || true
           kill "$xvfb_pid" 2>/dev/null || true
           wait "$mednafen_pid" 2>/dev/null || true
           wait "$xvfb_pid" 2>/dev/null || true
-          runtime_status=0
-          set -e
+          ps -ef >"$TEST_DIR/processes.log"
           printf 'GNGEO_TEST_STATUS=%s\n' "$runtime_status" >"$TEST_DIR/runtime-status.log"
+          set -e
           echo "=== xvfb.log ==="
           cat "$TEST_DIR/xvfb.log"
           echo "=== mednafen.log ==="
           cat "$TEST_DIR/mednafen.log"
           echo "=== runtime-meta.log ==="
-          cat "$TEST_DIR/runtime-meta.log" 2>/dev/null || true
+          cat "$TEST_DIR/runtime-meta.log"
           echo "=== processes.log ==="
-          cat "$TEST_DIR/processes.log" 2>/dev/null || true
+          cat "$TEST_DIR/processes.log"
+          test "$runtime_status" -eq 0
           grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/mednafen.log"
           grep -q 'Selecting Bios Vector' "$TEST_DIR/mednafen.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/mednafen.log"
