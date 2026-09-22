@@ -384,10 +384,8 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
 #endif
     for(unsigned i=0;i<drv_def.nb_romfile;i++) {
         auto &r=drv_def.rom[i];
-        Uint8 padding[3];
         if(!read_drv(r.filename,sizeof(r.filename)) ||
            !read_drv(&r.region,sizeof(r.region)) ||
-           !read_drv(padding,sizeof(padding)) ||
            !read_drv(&r.src,sizeof(r.src)) ||
            !read_drv(&r.dest,sizeof(r.dest)) ||
            !read_drv(&r.size,sizeof(r.size)) ||
