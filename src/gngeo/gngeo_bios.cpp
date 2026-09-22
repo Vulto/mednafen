@@ -78,5 +78,18 @@ bool GnGeoLoadBiosLo(GameFile *gf)
 
     return false;
 
+void GnGeoFreeBiosLo(void)
+{
+    free(GnGeoLoBios);
+    GnGeoLoBios = nullptr;
+    GnGeoLoBiosSize = 0;
 }
+
+uint8 *GnGeoGetBiosLo(size_t *size)
+{
+    if(size != nullptr)
+        *size = GnGeoLoBiosSize;
+    return GnGeoLoBios;
+}
+
 }
