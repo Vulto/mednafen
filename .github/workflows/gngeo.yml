@@ -52,14 +52,55 @@ jobs:
           ccache --set-config=base_dir=${GITHUB_WORKSPACE}
           ccache --show-config
 
+      - name: Restore generated build system
+        id: build-system-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            configure
+            aclocal.m4
+            libtool
+            config.h
+            include/config.h
+            src/config.h
+            config.status
+            config.log
+            Makefile
+            src/Makefile
+            **/Makefile
+            **/Makefile.in
+            **/stamp-h1
+          key: gngeo-build-system-${{ runner.os }}-${{ hashFiles('configure.ac', '**/Makefile.am', 'm4/**') }}
+
       - name: Prepare autotools
+        if: steps.build-system-cache.outputs.cache-hit != 'true'
         run: |
           ./autogen.sh
 
       - name: Configure GnGeo
+        if: steps.build-system-cache.outputs.cache-hit != 'true'
         run: |
           CC="ccache gcc" CXX="ccache g++" CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE -DGNGEO_CI_CPU_TRACE" ./configure --enable-gngeo --disable-debugger --disable-apple2 --disable-gb --disable-gba --disable-lynx --disable-md --disable-nes --disable-ngp --disable-pce --disable-pce-fast --disable-pcfx --disable-psx --disable-sasplay --disable-sms --disable-snes --disable-snes-faust --disable-ss --disable-ssfplay --disable-vb --disable-wswan --disable-fancy-scalers --disable-cjk-fonts
 
+      - name: Save generated build system
+        if: steps.build-system-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            configure
+            aclocal.m4
+            libtool
+            config.h
+            include/config.h
+            src/config.h
+            config.status
+            config.log
+            Makefile
+            src/Makefile
+            **/Makefile
+            **/Makefile.in
+            **/stamp-h1
+          key: gngeo-build-system-${{ runner.os }}-${{ hashFiles('configure.ac', '**/Makefile.am', 'm4/**') }}
       - name: Normalize build timestamps
         run: |
           while IFS= read -r -d '' file; do
