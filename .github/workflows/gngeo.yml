@@ -55,6 +55,15 @@ jobs:
           test -f 01-helloworld/build/01_helloworld.zip
           cp 01-helloworld/build/01_helloworld.zip "$RUNNER_TEMP/puzzledp.zip"
 
+      - name: Prepare open source Neo Geo BIOS
+        run: |
+          ngdevkitRoot=$(pkg-config --variable=sharedir ngdevkit)
+          bios=$(find "$ngdevkitRoot" -maxdepth 3 -type f -name 'neogeo.zip' | head -n1)
+          test -n "$bios"
+          mkdir -p "$RUNNER_TEMP/mednafen-home/firmware"
+          cp "$bios" "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip"
+          unzip -t "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" >/dev/null
+
       - name: Neo Geo homebrew runtime test
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
