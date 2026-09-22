@@ -182,13 +182,12 @@ jobs:
             sleep 0.25
             xdotool keyup --window "$wid" k
             sleep 2
+            import -window "$wid" "$TEST_DIR/input-after.png"
 
             kill -TERM "$pid" || true
             wait "$pid" || true
           '
           cat "$TEST_DIR/input.log"
-
-          import -window "$wid" "$TEST_DIR/input-after.png"
           test -s "$TEST_DIR/input-before.png"
           test -s "$TEST_DIR/input-after.png"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/input.log"
@@ -309,8 +308,6 @@ jobs:
             stat "$RUNNER_TEMP/01_helloworld.zip" 2>&1 || true
             sha256sum "$RUNNER_TEMP/01_helloworld.zip" 2>&1 || true
             unzip -Z1 "$RUNNER_TEMP/01_helloworld.zip" 2>&1 | sort || true
-            echo "=== trace markers ==="
-            grep -RhE 'GNGEO_(LOAD|68K|FRAME|INPUT|AUDIO|STATE)' "$RUNNER_TEMP/gngeo-test" 2>/dev/null | tail -n 2000 || true
             echo "=== core symbol ==="
             nm src/mednafen 2>/dev/null | grep 'EmulatedGnGeo' || true
           } > "$RUNNER_TEMP/gngeo-diagnostics/report.txt"
@@ -334,7 +331,7 @@ jobs:
       - name: Core symbol audit
         if: always()
         run: |
-          nm src/mednafen 2>/dev/null | grep -E 'EmulatedGnGeo' || true
+          nm src/mednafen 2>/dev/null | grep -q 'EmulatedGnGeo'
           test -f src/gngeo/core/gngeo_runtime.c
           grep -q 'GnGeoCoreStateSaveLoad' src/gngeo/core/gngeo_state.c
 
