@@ -158,9 +158,9 @@ int GnGeoRunFrame(void)
  for(int i=0;i<264;i++){ tm=cpu_68k_run(slice-tm); if(UpdateScanline()) cpu_68k_interrupt(2); }
  tm=cpu_68k_run(slice-tm);
  if(LastLine<21) draw_screen(); else draw_screen_scanline(LastLine-21,262,1);
- memory.watchdog++; if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;} cpu_68k_interrupt(1);
  pd4990a_addretrace();
  if(Fc>=neogeo_frame_counter_speed){Fc=0;neogeo_frame_counter++;} Fc++;
+ memory.watchdog++; if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;} cpu_68k_interrupt(1);
 #ifdef GNGEO_CI_FRAME_TRACE
  GnGeoFrameNumber++;
  if((GnGeoFrameNumber%30)==0) printf("GNGEO_FRAME frame=%u hash=%08x\n",GnGeoFrameNumber,GnGeoFrameHash());
