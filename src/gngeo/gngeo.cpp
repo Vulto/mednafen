@@ -76,9 +76,22 @@ static void Load(GameFile *gf)
   size_t lo_size=0; uint8 *lo=GnGeoGetBiosLo(&lo_size);
   if(!lo || lo_size<0x10000) throw MDFN_Error(ENOENT,_("Unable to load 000-lo.lo BIOS."));
   GnGeoCoreSetRoms(&GameRoms,lo);
+#ifdef GNGEO_CI_BACKTRACE
+  fprintf(stderr,"GNGEO_LOAD stage=set-roms\\n");
+#endif
   if(GnGeoCoreInitRoms()!=0) throw MDFN_Error(EINVAL,_("Unable to initialize Neo Geo ROM set."));
-  init_neo(); setup_misc_patch(GameRoms.info.name);
+#ifdef GNGEO_CI_BACKTRACE
+  fprintf(stderr,"GNGEO_LOAD stage=init-roms\\n");
+#endif
+  init_neo();
+#ifdef GNGEO_CI_BACKTRACE
+  fprintf(stderr,"GNGEO_LOAD stage=init-neo\\n");
+#endif
+  setup_misc_patch(GameRoms.info.name);
   StateBlob.resize(GnGeoCoreStateSize());
+#ifdef GNGEO_CI_BACKTRACE
+  fprintf(stderr,"GNGEO_LOAD stage=complete\\n");
+#endif
  }
  catch(...)
  {
