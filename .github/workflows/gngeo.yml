@@ -66,6 +66,7 @@ jobs:
           test -f /usr/share/ngdevkit/gngeo_data.zip
           python3 /usr/share/ngdevkit/romtool.py             --build hash             --format gngeo             --prom "$p1"             --mrom "$m1"             --vrom "$v1"             --srom "$s1"             --crom "$c1" "$c2"             --name puzzledp             --long-name "Puzzled Penguin"             --year 2026             --publisher "Homebrew"             --output "$RUNNER_TEMP/gngeo_data.zip"             -x gngeo.data=/usr/share/ngdevkit/gngeo_data.zip
           unzip -Z1 "$RUNNER_TEMP/gngeo_data.zip" | grep -q 'rom/puzzledp.drv'
+          cp "$RUNNER_TEMP/gngeo_data.zip" "$RUNNER_TEMP/gngeo-test/gngeo_data.zip" 2>/dev/null || true
 
       - name: Prepare open source Neo Geo BIOS
         run: |
@@ -82,6 +83,7 @@ jobs:
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$TEST_DIR"
           cp "$RUNNER_TEMP/puzzledp.zip" "$TEST_DIR/puzzledp.zip"
+          cp "$RUNNER_TEMP/gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
           timeout --signal=TERM 30s xvfb-run -a bash -c '
             set -eu
             SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/puzzledp.zip" >"$TEST_DIR/runtime.log" 2>&1 &
