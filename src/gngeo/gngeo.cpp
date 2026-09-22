@@ -88,6 +88,11 @@ static void Load(GameFile *gf)
 
 static bool TestMagic(GameFile *gf)
 {
+#ifdef GNGEO_CI_BACKTRACE
+ if(gf)
+  fprintf(stderr, "GNGEO_TESTMAGIC dir=%s fbase=%s\\n",
+          gf->outside.dir.c_str(), gf->outside.fbase.c_str());
+#endif
  return GnGeoHasDriver(gf);
 }
 
