@@ -292,6 +292,7 @@ int cpu_68k_run(Uint32 nb_cycle)
                 (unsigned)bankaddress);
     trace_vector = (int)memory.current_vector;
     trace_calls++;
+#endif
     //printf("pc=%x\n",regs.pc);
     /*
     pc=regs.pc;
