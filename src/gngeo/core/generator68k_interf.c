@@ -1,241 +1,184 @@
-#include "gngeo_compat.h"
-/* Generator 68000 integration. */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#ifdef USE_GENERATOR68K
-#include <stdlib.h>
-#include <string.h>
-
-#include "generator68k/generator.h"
-#include "generator68k/cpu68k.h"
-#include "generator68k/reg68k.h"
-#include "generator68k/mem68k.h"
-#include "memory.h"
-#include "emu.h"
-#include "state.h"
-#include "gnutil.h"
-
-extern unsigned int cpu68k_clocks;
-extern Uint8 *cpu68k_rom;
-extern unsigned int cpu68k_romlen;
-extern Uint8 *cpu68k_ram;
-
-extern Uint32 reg68k_pc;
-extern t_sr reg68k_sr;
-
-static Uint8 *mem68k_memptr_bad(Uint32 addr);
-static Uint8 *mem68k_memptr_cpu(Uint32 addr);
-static Uint8 *mem68k_memptr_bios(Uint32 addr);
-static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
-static Uint8 *mem68k_memptr_ram(Uint32 addr);
-int diss68k_getdumpline(uint32 addr68k, uint8 *addr, char *dumpline);
-
-t_mem68k_def mem68k_def[] = {
- {0x000, 0x0fff, mem68k_memptr_bad,
-  mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long,
-  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x100, 0x1ff, mem68k_memptr_ram,
-  mem68k_fetch_ram_byte, mem68k_fetch_ram_word, mem68k_fetch_ram_long,
-  mem68k_store_ram_byte, mem68k_store_ram_word, mem68k_store_ram_long},
- {0x200, 0x2ff, mem68k_memptr_cpu_bk,
-  NULL, NULL, NULL, NULL, NULL, NULL},
- {0x000, 0x0ff, mem68k_memptr_cpu,
-  mem68k_fetch_cpu_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long,
-  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0xc00, 0xcff, mem68k_memptr_bios,
-  mem68k_fetch_bios_byte, mem68k_fetch_bios_word, mem68k_fetch_bios_long,
-  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0xd00, 0xdff, mem68k_memptr_bad,
-  mem68k_fetch_sram_byte, mem68k_fetch_sram_word, mem68k_fetch_sram_long,
-  mem68k_store_sram_byte, mem68k_store_sram_word, mem68k_store_sram_long},
- {0x400, 0x401, mem68k_memptr_bad,
-  mem68k_fetch_pal_byte, mem68k_fetch_pal_word, mem68k_fetch_pal_long,
-  mem68k_store_pal_byte, mem68k_store_pal_word, mem68k_store_pal_long},
- {0x3c0, 0x3c0, mem68k_memptr_bad,
-  mem68k_fetch_video_byte, mem68k_fetch_video_word, mem68k_fetch_video_long,
-  mem68k_store_video_byte, mem68k_store_video_word, mem68k_store_video_long},
- {0x300, 0x300, mem68k_memptr_bad,
-  mem68k_fetch_ctl1_byte, mem68k_fetch_ctl1_word, mem68k_fetch_ctl1_long,
-  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x340, 0x340, mem68k_memptr_bad,
-  mem68k_fetch_ctl2_byte, mem68k_fetch_ctl2_word, mem68k_fetch_ctl2_long,
-  mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x380, 0x380, mem68k_memptr_bad,
-  mem68k_fetch_ctl3_byte, mem68k_fetch_ctl3_word, mem68k_fetch_ctl3_long,
-  mem68k_store_pd4990_byte, mem68k_store_pd4990_word, mem68k_store_pd4990_long},
- {0x320, 0x320, mem68k_memptr_bad,
-  mem68k_fetch_coin_byte, mem68k_fetch_coin_word, mem68k_fetch_coin_long,
-  mem68k_store_z80_byte, mem68k_store_z80_word, mem68k_store_z80_long},
- {0x800, 0x800, mem68k_memptr_bad,
-  mem68k_fetch_memcrd_byte, mem68k_fetch_memcrd_word, mem68k_fetch_memcrd_long,
-  mem68k_store_memcrd_byte, mem68k_store_memcrd_word, mem68k_store_memcrd_long},
- {0x3a0, 0x3a0, mem68k_memptr_bad,
-  mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long,
-  mem68k_store_setting_byte, mem68k_store_setting_word, mem68k_store_setting_long},
- {0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
-};clude "gngeo_compat.h"
-/* Generator 68000 integration. */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#ifdef USE_GENERATOR68K
-#include <stdlib.h>
-#include <string.h>
-
-#include "generator68k/generator.h"
-#include "generator68k/cpu68k.h"
-#include "generator68k/reg68k.h"
-#include "generator68k/mem68k.h"
-#include "memory.h"
-#include "emu.h"
-#include "state.h"
-#include "gnutil.h"
-
-extern unsigned int cpu68k_clocks;
-extern Uint8 *cpu68k_rom;
-extern unsigned int cpu68k_romlen;
-extern Uint8 *cpu68k_ram;
-
-extern Uint32 reg68k_pc;
-extern t_sr reg68k_sr;
-
-static Uint8 *mem68k_memptr_bad(Uint32 addr);
-static Uint8 *mem68k_memptr_cpu(Uint32 addr);
-static Uint8 *mem68k_memptr_bios(Uint32 addr);
-static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
-static Uint8 *mem68k_memptr_ram(Uint32 addr);
-int diss68k_getdumpline(uint32 addr68k, uint8 *addr, char *dumpline);
-
-t_mem68k_def mem68k_def[] = {
- {0x000, 0x0fff, mem68k_memptr_bad, mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x100, 0x1ff, mem68k_memptr_ram, mem68k_fetch_ram_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x200, 0x2ff, mem68k_memptr_cpu_bk, NULL, NULL, NULL, NULL, NULL, NULL},
- {0x300, 0x300, mem68k_memptr_bad, mem68k_fetch_ctl1_byte, mem68k_fetch_ctl1_word, mem68k_fetch_ctl1_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x320, 0x320, mem68k_memptr_bad, mem68k_fetch_coin_byte, mem68k_fetch_coin_word, mem68k_fetch_coin_long, mem68k_store_z80_byte, mem68k_store_z80_word, mem68k_store_z80_long},
- {0x340, 0x340, mem68k_memptr_bad, mem68k_fetch_ctl2_byte, mem68k_fetch_ctl2_word, mem68k_fetch_ctl2_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0x380, 0x380, mem68k_memptr_bad, mem68k_fetch_ctl3_byte, mem68k_fetch_ctl3_word, mem68k_fetch_ctl3_long, mem68k_store_pd4990_byte, mem68k_store_pd4990_word, mem68k_store_pd4990_long},
- {0x3a0, 0x3a0, mem68k_memptr_bad, mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word, mem68k_fetch_invalid_long, mem68k_store_setting_byte, mem68k_store_setting_word, mem68k_store_setting_long},
- {0x3c0, 0x3c0, mem68k_memptr_bad, mem68k_fetch_video_byte, mem68k_fetch_video_word, mem68k_fetch_video_long, mem68k_store_video_byte, mem68k_store_video_word, mem68k_store_video_long},
- {0x400, 0x401, mem68k_memptr_bad, mem68k_fetch_pal_byte, mem68k_fetch_pal_word, mem68k_fetch_pal_long, mem68k_store_pal_byte, mem68k_store_pal_word, mem68k_store_pal_long},
- {0x800, 0x800, mem68k_memptr_bad, mem68k_fetch_memcrd_byte, mem68k_fetch_memcrd_word, mem68k_fetch_memcrd_long, mem68k_store_memcrd_byte, mem68k_store_memcrd_word, mem68k_store_memcrd_long},
- {0xc00, 0xcff, mem68k_memptr_bios, mem68k_fetch_bios_byte, mem68k_fetch_bios_word, mem68k_fetch_bios_long, mem68k_store_invalid_byte, mem68k_store_invalid_word, mem68k_store_invalid_long},
- {0xd00, 0xdff, mem68k_memptr_bad, mem68k_fetch_sram_byte, mem68k_fetch_sram_word, mem68k_fetch_sram_long, mem68k_store_sram_byte, mem68k_store_sram_word, mem68k_store_sram_long},
- {0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL}
-};
-
-Uint8 *(*mem68k_memptr[0x1000])(Uint32);
-Uint8 (*mem68k_fetch_byte[0x1000])(Uint32);
-Uint16 (*mem68k_fetch_word[0x1000])(Uint32);
-Uint32 (*mem68k_fetch_long[0x1000])(Uint32);
-void (*mem68k_store_byte[0x1000])(Uint32, Uint8);
-void (*mem68k_store_word[0x1000])(Uint32, Uint16);
-void (*mem68k_store_long[0x1000])(Uint32, Uint32);
-
-static Uint8 *mem68k_memptr_bad(Uint32 addr);
-static Uint8 *mem68k_memptr_cpu(Uint32 addr);
-static Uint8 *mem68k_memptr_bios(Uint32 addr);
-static Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
-static Uint8 *mem68k_memptr_ram(Uint32 addr);
-
-static void BankswitcherInit(void)
-{
- mem68k_def[2].fetch_byte=mem68k_fetch_bk_normal_byte;
- mem68k_def[2].fetch_word=mem68k_fetch_bk_normal_word;
- mem68k_def[2].fetch_long=mem68k_fetch_bk_normal_long;
- mem68k_def[2].store_byte=mem68k_store_bk_normal_byte;
- mem68k_def[2].store_word=mem68k_store_bk_normal_word;
- mem68k_def[2].store_long=mem68k_store_bk_normal_long;
-}
-
-int mem68k_init(void)
-{
- memset(mem68k_memptr,0,sizeof(mem68k_memptr));
- memset(mem68k_fetch_byte,0,sizeof(mem68k_fetch_byte));
- memset(mem68k_fetch_word,0,sizeof(mem68k_fetch_word));
- memset(mem68k_fetch_long,0,sizeof(mem68k_fetch_long));
- memset(mem68k_store_byte,0,sizeof(mem68k_store_byte));
- memset(mem68k_store_word,0,sizeof(mem68k_store_word));
- memset(mem68k_store_long,0,sizeof(mem68k_store_long));
- BankswitcherInit();
- for(unsigned i=0; mem68k_def[i].start || mem68k_def[i].end; i++)
-  for(unsigned j=mem68k_def[i].start; j<=mem68k_def[i].end && j<0x1000; j++) {
-   mem68k_memptr[j]=mem68k_def[i].memptr;
-   mem68k_fetch_byte[j]=mem68k_def[i].fetch_byte;
-   mem68k_fetch_word[j]=mem68k_def[i].fetch_word;
-   mem68k_fetch_long[j]=mem68k_def[i].fetch_long;
-   mem68k_store_byte[j]=mem68k_def[i].store_byte;
-   mem68k_store_word[j]=mem68k_def[i].store_word;
-   mem68k_store_long[j]=mem68k_def[i].store_long;
-  }
- return 0;
-}
-
-static void SwapMemory(Uint8 *mem, Uint32 length)
-{
- for(Uint32 i=0; i+1<length; i+=2) {
-  Uint8 t=mem[i]; mem[i]=mem[i+1]; mem[i+1]=t;
- }
-}
-
-Uint8 *mem68k_memptr_bad(Uint32 addr)
-{
-    return memory.rom.cpu_m68k.p;
-}
-
-Uint8 *mem68k_memptr_cpu(Uint32 addr)
-{
-    if (addr < cpu68k_romlen)
-        return memory.rom.cpu_m68k.p + addr;
-    return memory.rom.cpu_m68k.p;
-}
-
-Uint8 *mem68k_memptr_bios(Uint32 addr)
-{
-    return memory.rom.bios_m68k.p + (addr & 0x1ffff);
-}
-
-Uint8 *mem68k_memptr_cpu_bk(Uint32 addr)
-{
-    return memory.rom.cpu_m68k.p + bankaddress + (addr & 0xfffff);
-}
-
-Uint8 *mem68k_memptr_ram(Uint32 addr)
-{
-    return memory.ram + (addr & 0xffff);
-}
-
-void cpu_68k_bankswitch(Uint32 address)
-{
-    bankaddress = address;
-}
-
-void cpu_68k_reset(void)
-{
-    cpu68k_reset();
-}
-
 void cpu_68k_init(void)
 {
+    printf("GEN68k CPU INIT\n");
     cpu68k_clearcache();
-#ifndef WORDS_BIGENDIAN
-    SwapMemory(memory.rom.cpu_m68k.p, memory.rom.cpu_m68k.size);
-    if(memory.rom.bios_m68k.p && memory.rom.bios_m68k.size && memory.rom.bios_m68k.p[0] == 0x10)
-        SwapMemory(memory.rom.bios_m68k.p, memory.rom.bios_m68k.size);
-    SwapMemory(memory.game_vector, sizeof(memory.game_vector));
-#endif
-    cpu68k_ram=memory.ram;
-    cpu68k_rom=memory.rom.cpu_m68k.p;
-    cpu68k_romlen=memory.rom.cpu_m68k.size < 0x100000 ? memory.rom.cpu_m68k.size : 0x100000;
+    cpu68k_ram = memory.ram;
+    cpu68k_rom = memory.rom.cpu_m68k.p;
+    if (memory.rom.cpu_m68k.size < 0x100000)
+        cpu68k_romlen = memory.rom.cpu_m68k.size;
+    else
+        cpu68k_romlen = 0x100000;
     mem68k_init();
     cpu68k_init();
-    if(memory.rom.cpu_m68k.size > 0x100000)
+    if (memory.rom.cpu_m68k.size > 0x100000)
         cpu_68k_bankswitch(0);
 }
+ 
+#include "gngeo_compat.h"
+/*  gngeo a neogeo emulator
+ *  Copyright (C) 2001 Peponas Mathieu
+ * 
+ *  This program is free software; you can redistribute it and/or modify  
+ *  it under the terms of the GNU General Public License as published by   
+ *  the Free Software Foundation; either version 2 of the License, or    
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Library General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. 
+ */
+
+/* genrator68k interface */
+
+
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef USE_GENERATOR68K
+#include <stdlib.h>
+
+#include "generator68k/generator.h"
+#include "generator68k/cpu68k.h"
+#include "generator68k/reg68k.h"
+#include "generator68k/mem68k.h"
+#include "memory.h"
+#include "emu.h"
+#include "gnutil.h"
+
+extern unsigned int cpu68k_clocks;
+extern Uint8 *cpu68k_rom;
+extern unsigned int cpu68k_romlen;
+extern Uint8 *cpu68k_ram;
+
+extern Uint32 reg68k_pc;
+extern t_sr reg68k_sr;
+
+Uint8 *mem68k_memptr_bad(Uint32 addr);
+Uint8 *mem68k_memptr_cpu(Uint32 addr);
+Uint8 *mem68k_memptr_bios(Uint32 addr);
+Uint8 *mem68k_memptr_cpu_bk(Uint32 addr);
+Uint8 *mem68k_memptr_ram(Uint32 addr);
+
+int diss68k_getdumpline(uint32 addr68k, uint8 *addr, char *dumpline);
+
+t_mem68k_def mem68k_def[] = {
+    {0x000, 0x1000, mem68k_memptr_bad,
+     mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word,
+     mem68k_fetch_invalid_long,
+     mem68k_store_invalid_byte, mem68k_store_invalid_word,
+     mem68k_store_invalid_long},
+
+    /* RAM */
+    {0x100, 0x1FF, mem68k_memptr_ram,
+     mem68k_fetch_ram_byte, mem68k_fetch_ram_word, mem68k_fetch_ram_long,
+     mem68k_store_ram_byte, mem68k_store_ram_word, mem68k_store_ram_long},
+
+    /* BANKED CPU */
+    {0x200, 0x2ff, mem68k_memptr_cpu_bk,
+     NULL, NULL, NULL, NULL, NULL, NULL},
+
+    /* CPU BANK 0 */
+    {0x000, 0x0ff, mem68k_memptr_cpu,
+     mem68k_fetch_cpu_byte, mem68k_fetch_cpu_word, mem68k_fetch_cpu_long,
+     mem68k_store_invalid_byte, mem68k_store_invalid_word,
+     mem68k_store_invalid_long},
+
+    /* BIOS */
+    {0xc00, 0xcFf, mem68k_memptr_bios,
+     mem68k_fetch_bios_byte, mem68k_fetch_bios_word,
+     mem68k_fetch_bios_long,
+     mem68k_store_invalid_byte, mem68k_store_invalid_word,
+     mem68k_store_invalid_long},
+
+    /* SRAM */
+    {0xd00, 0xdff, mem68k_memptr_bad,
+     mem68k_fetch_sram_byte, mem68k_fetch_sram_word,
+     mem68k_fetch_sram_long,
+     mem68k_store_sram_byte, mem68k_store_sram_word,
+     mem68k_store_sram_long},
+
+    /* PAL */
+    {0x400, 0x401, mem68k_memptr_bad,
+     mem68k_fetch_pal_byte, mem68k_fetch_pal_word, mem68k_fetch_pal_long,
+     mem68k_store_pal_byte, mem68k_store_pal_word, mem68k_store_pal_long},
+
+    /* VIDEO */
+    {0x3c0, 0x3c0, mem68k_memptr_bad,
+     mem68k_fetch_video_byte, mem68k_fetch_video_word,
+     mem68k_fetch_video_long,
+     mem68k_store_video_byte, mem68k_store_video_word,
+     mem68k_store_video_long},
+
+    /* CONTRLOER 1 */
+    {0x300, 0x300, mem68k_memptr_bad,
+     mem68k_fetch_ctl1_byte, mem68k_fetch_ctl1_word,
+     mem68k_fetch_ctl1_long,
+     mem68k_store_invalid_byte, mem68k_store_invalid_word,
+     mem68k_store_invalid_long},
+
+    /* CONTRLOER 2 */
+    {0x340, 0x340, mem68k_memptr_bad,
+     mem68k_fetch_ctl2_byte, mem68k_fetch_ctl2_word,
+     mem68k_fetch_ctl2_long,
+     mem68k_store_invalid_byte, mem68k_store_invalid_word,
+     mem68k_store_invalid_long},
+
+    /* CONTROLER 3 + PD4990 */
+    {0x380, 0x380, mem68k_memptr_bad,
+     mem68k_fetch_ctl3_byte, mem68k_fetch_ctl3_word,
+     mem68k_fetch_ctl3_long,
+     mem68k_store_pd4990_byte, mem68k_store_pd4990_word,
+     mem68k_store_pd4990_long},
+
+    /* COIN + Z80 */
+    {0x320, 0x320, mem68k_memptr_bad,
+     mem68k_fetch_coin_byte, mem68k_fetch_coin_word,
+     mem68k_fetch_coin_long,
+     mem68k_store_z80_byte, mem68k_store_z80_word, mem68k_store_z80_long},
+
+    /* MEMCARD */
+    {0x800, 0x800, mem68k_memptr_bad,
+     mem68k_fetch_memcrd_byte, mem68k_fetch_memcrd_word,
+     mem68k_fetch_memcrd_long,
+     mem68k_store_memcrd_byte, mem68k_store_memcrd_word,
+     mem68k_store_memcrd_long},
+
+    /* SETTING DIVER */
+    {0x3A0, 0x3a0, mem68k_memptr_bad,
+     mem68k_fetch_invalid_byte, mem68k_fetch_invalid_word,
+     mem68k_fetch_invalid_long,
+     mem68k_store_setting_byte, mem68k_store_setting_word,
+     mem68k_store_setting_long},
+
+    {0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+
+};
+
+Uint8 *(*mem68k_memptr[0x1000]) (Uint32 addr);
+Uint8(*mem68k_fetch_byte[0x1000]) (Uint32 addr);
+Uint16(*mem68k_fetch_word[0x1000]) (Uint32 addr);
+Uint32(*mem68k_fetch_long[0x1000]) (Uint32 addr);
+void (*mem68k_store_byte[0x1000]) (Uint32 addr, Uint8 data);
+void (*mem68k_store_word[0x1000]) (Uint32 addr, Uint16 data);
+void (*mem68k_store_long[0x1000]) (Uint32 addr, Uint32 data);
+
+static void swap_memory(Uint8 *mem, Uint32 length)
+{
+    for (Uint32 i = 0; i + 1 < length; i += 2) {
+        Uint8 t = mem[i];
+        mem[i] = mem[i + 1];
+        mem[i + 1] = t;
+    }
+}
+
+
 
 int cpu_68k_run(Uint32 nb_cycle)
 {
@@ -345,9 +288,7 @@ int cpu_68k_getcycle(void)
     return cpu68k_clocks;
 }
 
-
+#endif
 #include "generator68k/cpu68k.h"
 size_t GnGeo68kStateSize(void) { return sizeof(regs); }
 void GnGeo68kStateSaveLoad(void *p, int load) { if(load) memcpy(&regs,p,sizeof(regs)); else memcpy(p,&regs,sizeof(regs)); }
-
-#endif /* USE_GENERATOR68K */
