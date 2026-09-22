@@ -256,23 +256,23 @@ jobs:
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/gngeo-diagnostics"
-          cp "$RUNNER_TEMP/gngeo-test/"*.log "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
-          cp "$RUNNER_TEMP/gngeo-test/"*.png "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
-          cp "$RUNNER_TEMP/gngeo-test/"*.txt "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
+          cp -a "$RUNNER_TEMP/gngeo-test/." "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
           {
             echo "commit=$GITHUB_SHA"
-            echo "=== KOF98 repository files ==="
+            echo "=== KOF98 file status ==="
+            stat src/gngeo/kof98.zip 2>&1 || true
+            git status --short src/gngeo/kof98.zip 2>&1 || true
+            echo "=== KOF98 tracked files ==="
             git ls-files | grep -Ei 'kof98' || true
-            echo "=== KOF98 archive ==="
-            if test -f "$RUNNER_TEMP/gngeo-test/kof98.zip"; then
-              sha256sum "$RUNNER_TEMP/gngeo-test/kof98.zip"
-              unzip -Z1 "$RUNNER_TEMP/gngeo-test/kof98.zip" | sort
-            fi
+            echo "=== KOF98 archive metadata ==="
+            unzip -Z1 src/gngeo/kof98.zip 2>&1 | sort || true
+            sha256sum src/gngeo/kof98.zip 2>&1 || true
             echo "=== trace markers ==="
-            grep -hE 'GNGEO_(LOAD|68K|FRAME|INPUT|AUDIO|STATE)' "$RUNNER_TEMP/gngeo-test/"*.log 2>/dev/null | tail -n 1000 || true
-            echo "=== core build ==="
+            grep -RhE 'GNGEO_(LOAD|68K|FRAME|INPUT|AUDIO|STATE)' "$RUNNER_TEMP/gngeo-test" 2>/dev/null | tail -n 2000 || true
+            echo "=== core symbol ==="
             nm src/mednafen 2>/dev/null | grep 'EmulatedGnGeo' || true
           } > "$RUNNER_TEMP/gngeo-diagnostics/report.txt"
+          find "$RUNNER_TEMP/gngeo-diagnostics" -type f -printf '%p %s bytes\n' | sort > "$RUNNER_TEMP/gngeo-diagnostics/files.txt"
 
       - name: Upload KOF98 diagnostics
         if: always()
@@ -281,7 +281,6 @@ jobs:
           name: gngeo-kof98-diagnostics-${{ github.run_id }}
           path: ${{ runner.temp }}/gngeo-diagnostics
           if-no-files-found: warn
-
       - name: GnGeo source audit
         if: always()
         run: |
