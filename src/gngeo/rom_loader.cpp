@@ -209,7 +209,12 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
             stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfx", 0x20000, 0);
             if(!stream) stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfix", 0x20000, 0);
         }
-        if(!stream) return false;
+        if(!stream) {
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_DRIVER entry-miss=%s\\n", name.c_str());
+#endif
+        return false;
+    }
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_sfix, size, REGION_FIXED_LAYER_BIOS) != 0) return false;
         if(stream->read(roms->bios_sfix.p, size) != size) return false;
@@ -243,9 +248,15 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
         gf->outside.dir + "/gngeo_data.zip";
     std::unique_ptr<Mednafen::ArchiveReader> archive(
         Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
+#ifdef GNGEO_CI_BACKTRACE
+    fprintf(stderr, "GNGEO_DRIVER archive=%s opened=%d\\n", path.c_str(), archive ? 1 : 0);
+#endif
     if(!archive) return false;
 
     std::string name = "rom/" + gf->outside.fbase + ".drv";
+#ifdef GNGEO_CI_BACKTRACE
+    fprintf(stderr, "GNGEO_DRIVER entry=%s files=%u\\n", name.c_str(), (unsigned)archive->num_files());
+#endif
     std::unique_ptr<Mednafen::Stream> stream;
     try {
         stream.reset(archive->open(name, Mednafen::VirtualFS::MODE_READ));
