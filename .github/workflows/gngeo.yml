@@ -60,12 +60,18 @@ jobs:
         run: |
           CC="ccache gcc" CXX="ccache g++" CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE -DGNGEO_CI_CPU_TRACE" ./configure --enable-gngeo --disable-debugger
 
-      - name: Normalize source timestamps
+      - name: Normalize build timestamps
         run: |
           while IFS= read -r -d '' file; do
             timestamp="$(git log -1 --format=%ct -- "$file")"
             touch -d "@$timestamp" "$file"
           done < <(git ls-files -z '*.c' '*.cc' '*.cpp' '*.h' '*.hh' '*.hpp' '*.inc')
+          for file in config.h include/config.h src/config.h; do
+            if test -f "$file"; then
+              touch -d '@1' "$file"
+            fi
+          done
+          find . -name stamp-h1 -type f -exec touch -d '@1' {} +
 
       - name: Build
         run: |
