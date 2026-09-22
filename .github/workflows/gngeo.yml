@@ -64,6 +64,10 @@ jobs:
             --disable-fancy-scalers \
             --disable-cjk-fonts
 
+      - name: Build Mednafen + GnGeo only
+        run: |
+          make -j"$(nproc)"
+
       - name: Build legal Neo Geo homebrew fixture
         run: |
           sudo apt-get install -y software-properties-common
