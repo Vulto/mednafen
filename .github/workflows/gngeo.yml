@@ -253,11 +253,11 @@ jobs:
           cp -a "$RUNNER_TEMP/gngeo-test/." "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
           {
             echo "commit=$GITHUB_SHA"
-            echo "=== homebrew fixture status
+            echo "=== homebrew fixture status ==="
             stat "$RUNNER_TEMP/puzzledp.zip" 2>&1 || true
             sha256sum "$RUNNER_TEMP/puzzledp.zip" 2>&1 || true
             unzip -Z1 "$RUNNER_TEMP/puzzledp.zip" 2>&1 | sort || true
-            echo "=== trace markers ===""
+            echo "=== trace markers ==="
             grep -RhE 'GNGEO_(LOAD|68K|FRAME|INPUT|AUDIO|STATE)' "$RUNNER_TEMP/gngeo-test" 2>/dev/null | tail -n 2000 || true
             echo "=== core symbol ==="
             nm src/mednafen 2>/dev/null | grep 'EmulatedGnGeo' || true
@@ -278,7 +278,6 @@ jobs:
           test -f src/gngeo/core/gngeo_runtime.c
           test -f src/gngeo/core/gngeo_state.c
           ! grep -RIn --exclude='*.md' -E '#[[:space:]]*include[[:space:]]*[<"]SDL' src/gngeo
-          ! grep -RIn -E 'usage limit|usage_limit|codex.*limit|limit.*codex' .github src/gngeo || true
 
       - name: Core symbol audit
         if: always()
@@ -291,6 +290,6 @@ jobs:
         if: always()
         run: |
           mkdir -p artifacts
-          test -x src/mednafen/mednafen
-          cp src/mednafen/mednafen artifacts/mednafen-gngeo
+          test -x src/mednafen
+          cp src/mednafen artifacts/mednafen-gngeo
           tar -czf artifacts/mednafen-gngeo-build.tar.gz artifacts/mednafen-gngeo
