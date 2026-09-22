@@ -43,19 +43,17 @@ jobs:
 
       - name: Build legal Neo Geo homebrew fixture
         run: |
-          git clone --depth 1 https://github.com/PeterLemon/NEO-GEO "$RUNNER_TEMP/neo-geo-tests"
-          test -f "$RUNNER_TEMP/neo-geo-tests/HelloWorld/puzzledp.zip"
-          cp "$RUNNER_TEMP/neo-geo-tests/HelloWorld/puzzledp.zip" "$RUNNER_TEMP/puzzledp.zip"
-          unzip -t "$RUNNER_TEMP/puzzledp.zip" >/dev/null
-
-      - name: Build open source Neo Geo BIOS
-        run: |
-          git clone --depth 1 https://github.com/neogeodev/neopenbios "$RUNNER_TEMP/neopenbios"
-          test -f "$RUNNER_TEMP/neopenbios/LICENSE"
-          make -C "$RUNNER_TEMP/neopenbios"
-          test -f "$RUNNER_TEMP/neopenbios/neopenbios.bin"
-          mkdir -p "$RUNNER_TEMP/mednafen-home/firmware"
-          cp "$RUNNER_TEMP/neopenbios/neopenbios.bin" "$RUNNER_TEMP/mednafen-home/firmware/neogeo.bin"
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y ppa:dciabrin/ngdevkit
+          sudo apt-get update
+          sudo apt-get install -y ngdevkit
+          git clone --depth 1 https://github.com/dciabrin/ngdevkit-examples "$RUNNER_TEMP/ngdevkit-examples"
+          cd "$RUNNER_TEMP/ngdevkit-examples"
+          autoreconf -iv
+          ./configure
+          make -C 01-helloworld
+          test -f 01-helloworld/build/01_helloworld.zip
+          cp 01-helloworld/build/01_helloworld.zip "$RUNNER_TEMP/puzzledp.zip"
 
       - name: Neo Geo homebrew runtime test
         run: |
