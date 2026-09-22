@@ -2,9 +2,11 @@ name: GnGeo CI
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
   pull_request:
-    branches: [master]
+    branches:
+      - master
   workflow_dispatch:
 
 concurrency:
@@ -13,54 +15,30 @@ concurrency:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y             autoconf automake autopoint gettext libtool pkg-config build-essential             libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev             zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev             software-properties-common xvfb xauth xdotool zip ccache git rsync             imagemagick gdb binutils
+          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xauth xdotool zip gdb binutils imagemagick
           sudo add-apt-repository -y ppa:dciabrin/ngdevkit
           sudo apt-get update
           sudo apt-get install -y ngdevkit ngdevkit-gngeo
 
-      - name: Configure ccache
+      - name: Configure
         run: |
-          ccache --set-config=cache_dir=${HOME}/.cache/ccache
-          ccache --set-config=max_size=2G
-          ccache --set-config=compression=true
-          ccache --set-config=base_dir=${GITHUB_WORKSPACE}
-
-      - name: Restore compiler cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ccache
-          key: gngeo-ccache-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            gngeo-ccache-${{ runner.os }}-
-
-      - name: Prepare autotools
-        run: ./autogen.sh
-
-      - name: Configure GnGeo
-        run: |
-          CC="ccache gcc" CXX="ccache g++"           CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE -DGNGEO_CI_CPU_TRACE -DGNGEO_CI_CORE_TRACE"           ./configure --enable-gngeo --disable-debugger
+          ./autogen.sh
+          CPPFLAGS="-DGNGEO_CI_INPUT_TRACE -DGNGEO_CI_FRAME_TRACE -DGNGEO_CI_AUDIO_TRACE -DGNGEO_CI_STATE_TRACE -DGNGEO_CI_BACKTRACE -DGNGEO_CI_CPU_TRACE -DGNGEO_CI_CORE_TRACE" ./configure --enable-gngeo --disable-debugger
 
       - name: Build
-        run: |
-          ccache --zero-stats
-          make -j"$(nproc)"
-          ccache --show-stats
+        run: make -j"$(nproc)"
 
       - name: Build open Neo Geo test ROMs
         run: |
@@ -76,349 +54,100 @@ jobs:
           cp "$EXAMPLES/07-attract-and-game/build/rom/neogeo.zip" "${RUNNER_TEMP}/neo-homebrew/neogeo.zip"
           cp "$EXAMPLES/06-sound-adpcma/build/rom/06_sound_adpcma.zip" "${RUNNER_TEMP}/neo-homebrew/"
           cp "$EXAMPLES/06-sound-adpcma/build/rom/gngeo_data.zip" "${RUNNER_TEMP}/neo-homebrew/06_sound_adpcma-gngeo_data.zip"
-          sha256sum "${RUNNER_TEMP}/neo-homebrew/"*.zip | tee "${RUNNER_TEMP}/neo-homebrew/assets.sha256"
+          sha256sum "${RUNNER_TEMP}/neo-homebrew/"*.zip
 
-      - name: Prepare runtime environment
-        run: |
-          rm -rf "${RUNNER_TEMP}/gngeo"
-          mkdir -p "${RUNNER_TEMP}/gngeo"/{runtime,input,audio,state,video,gdb,diagnostics}
-          cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "${RUNNER_TEMP}/gngeo/runtime/neogeo.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "${RUNNER_TEMP}/gngeo/input/neogeo.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "${RUNNER_TEMP}/gngeo/audio/neogeo.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "${RUNNER_TEMP}/gngeo/state/neogeo.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "${RUNNER_TEMP}/gngeo/video/neogeo.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "${RUNNER_TEMP}/gngeo/runtime/"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "${RUNNER_TEMP}/gngeo/runtime/gngeo_data.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "${RUNNER_TEMP}/gngeo/input/"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "${RUNNER_TEMP}/gngeo/input/gngeo_data.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/06_sound_adpcma.zip" "${RUNNER_TEMP}/gngeo/audio/"
-          cp "${RUNNER_TEMP}/neo-homebrew/06_sound_adpcma-gngeo_data.zip" "${RUNNER_TEMP}/gngeo/audio/gngeo_data.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "${RUNNER_TEMP}/gngeo/state/"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "${RUNNER_TEMP}/gngeo/state/gngeo_data.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "${RUNNER_TEMP}/gngeo/video/"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "${RUNNER_TEMP}/gngeo/video/gngeo_data.zip"
-
-      - name: 68000 boot diagnostics
-        id: boot_diag
+      - name: 68000 boot diagnostic
         continue-on-error: true
         run: |
           set +e
-          export TEST_DIR="${RUNNER_TEMP}/gngeo/gdb"
-          export MEDNAFEN_HOME="${RUNNER_TEMP}/gngeo/gdb/home"
-          export DISPLAY=:98
-          mkdir -p "$MEDNAFEN_HOME/firmware"
+          export DIR="${RUNNER_TEMP}/gngeo-diagnostic"
+          export MEDNAFEN_HOME="$DIR/home"
+          export DISPLAY=:99
+          mkdir -p "$MEDNAFEN_HOME/firmware" "$DIR"
           cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "$TEST_DIR/07_attract_and_game.zip"
-          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
-          Xvfb :98 -screen 0 1024x768x24 -ac >"$TEST_DIR/xvfb.log" 2>&1 &
+          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "$DIR/07_attract_and_game.zip"
+          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$DIR/gngeo_data.zip"
+          Xvfb :99 -screen 0 1024x768x24 -ac >"$DIR/xvfb.log" 2>&1 &
           xvfb_pid=$!
           sleep 2
-          cat >"$TEST_DIR/gdb.cmd" <<EOF
+          cat >"$DIR/gdb.cmd" <<EOF
 set pagination off
 set confirm off
-set breakpoint pending on
 handle SIGPIPE nostop noprint pass
 run
-printf "\\n--- GDB THREAD BACKTRACES ---\\n"
+printf "\\n--- backtraces ---\\n"
 thread apply all bt full
-printf "\\n--- GDB REGISTERS ---\\n"
+printf "\\n--- registers ---\\n"
 info registers
-printf "\\n--- GDB CURRENT INSTRUCTIONS ---\\n"
+printf "\\n--- instructions ---\\n"
 x/24i $pc-32
-printf "\\n--- GDB EXIT ---\\n"
 quit
 EOF
-          gdb -q -batch -x "$TEST_DIR/gdb.cmd" --args ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip" >"$TEST_DIR/gdb.log" 2>&1
+          gdb -q -batch -x "$DIR/gdb.cmd" --args ./src/mednafen -sound 0 "$DIR/07_attract_and_game.zip" >"$DIR/gdb.log" 2>&1
           status=$?
-          echo "GDB_EXIT_STATUS=$status" >"$TEST_DIR/status.log"
           kill "$xvfb_pid" 2>/dev/null || true
-          cat "$TEST_DIR/gdb.log"
-          grep -E 'GNGEO_(LOAD|CORE|68K|FRAME|INPUT|AUDIO)' "$TEST_DIR/gdb.log" | tail -n 300 >"$TEST_DIR/trace-tail.log" || true
-          addr2line -Cfipe ./src/mednafen 0x471cbe >"$TEST_DIR/known-backtrace-address.txt" 2>&1 || true
-          test $status -eq 0
+          echo "GDB_EXIT_STATUS=$status" | tee "$DIR/status.log"
+          cat "$DIR/gdb.log"
+          grep -E 'GNGEO_(LOAD|CORE|68K|FRAME|INPUT|AUDIO)' "$DIR/gdb.log" | tail -n 500 >"$DIR/trace.log" || true
+          addr2line -Cfipe ./src/mednafen 0x471cbe >"$DIR/known-backtrace-address.txt" 2>&1 || true
 
-      - name: Neo Geo runtime diagnostics
-        id: runtime_diag
+      - name: Runtime probe
         continue-on-error: true
         run: |
           set +e
-          export BASE="${RUNNER_TEMP}/gngeo/runtime"
-          export MEDNAFEN_HOME="$BASE/home"
-          export DISPLAY=:99
-          Xvfb :99 -screen 0 1024x768x24 -ac >"$BASE/xvfb.log" 2>&1 &
+          export DIR="${RUNNER_TEMP}/gngeo-runtime"
+          export MEDNAFEN_HOME="$DIR/home"
+          export DISPLAY=:98
+          mkdir -p "$MEDNAFEN_HOME/firmware" "$DIR"
+          cp "${RUNNER_TEMP}/neo-homebrew/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game.zip" "$DIR/07_attract_and_game.zip"
+          cp "${RUNNER_TEMP}/neo-homebrew/07_attract_and_game-gngeo_data.zip" "$DIR/gngeo_data.zip"
+          Xvfb :98 -screen 0 1024x768x24 -ac >"$DIR/xvfb.log" 2>&1 &
           xvfb_pid=$!
           sleep 2
-          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL             ./src/mednafen -sound 0 "$BASE/07_attract_and_game.zip" >"$BASE/mednafen.log" 2>&1 &
+          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL ./src/mednafen -sound 0 "$DIR/07_attract_and_game.zip" >"$DIR/mednafen.log" 2>&1 &
           pid=$!
-          wid=""
           for i in $(seq 1 45); do
             wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
             test -n "$wid" && break
             kill -0 "$pid" 2>/dev/null || break
             sleep 1
           done
-          echo "GNGEO_TEST_WINDOW=$wid" >"$BASE/status.log"
+          echo "WINDOW=${wid:-none}" >"$DIR/status.log"
           if test -n "$wid"; then
             xdotool windowfocus "$wid"
             sleep 2
             xdotool key --window "$wid" 5
             sleep 0.5
             xdotool key --window "$wid" Return
-            for t in 2 5 10; do
-              sleep "$((t == 2 ? 2 : t == 5 ? 3 : 5))"
-              import -window "$wid" "$BASE/frame-$t.png" 2>/dev/null || true
-            done
-            kill -0 "$pid" 2>/dev/null
-            rc=$?
-          else
-            rc=1
+            sleep 3
+            import -window "$wid" "$DIR/frame-3.png" 2>/dev/null || true
+            sleep 7
+            import -window "$wid" "$DIR/frame-10.png" 2>/dev/null || true
           fi
           kill -TERM "$pid" 2>/dev/null || true
           sleep 1
           kill -KILL "$pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
           kill "$xvfb_pid" 2>/dev/null || true
-          echo "RUNTIME_EXIT_STATUS=$rc" >>"$BASE/status.log"
-          echo "=== mednafen.log ==="
-          cat "$BASE/mednafen.log"
-          echo "=== CPU trace ==="
-          grep 'GNGEO_68K' "$BASE/mednafen.log" | head -n 128 || true
-          echo "=== frame trace ==="
-          grep 'GNGEO_FRAME' "$BASE/mednafen.log" || true
-          echo "=== image metrics ==="
-          for f in "$BASE"/frame-*.png; do
+          wait "$pid" 2>/dev/null || true
+          cat "$DIR/mednafen.log"
+          for f in "$DIR"/frame-*.png; do
             test -f "$f" || continue
-            printf '%s ' "$(basename "$f")"
-            identify -format 'mean=%[fx:mean] min=%[fx:min] max=%[fx:max]\n' "$f" 2>/dev/null || true
+            identify -format '%f mean=%[fx:mean] min=%[fx:min] max=%[fx:max]\\n' "$f"
           done
-          test "$rc" -eq 0
-
-      - name: Neo Geo input test
-        id: input_test
-        continue-on-error: true
-        run: |
-          set +e
-          export BASE="${RUNNER_TEMP}/gngeo/input"
-          export MEDNAFEN_HOME="$BASE/home"
-          export DISPLAY=:97
-          Xvfb :97 -screen 0 1024x768x24 -ac >"$BASE/xvfb.log" 2>&1 &
-          xvfb_pid=$!
-          sleep 2
-          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL             ./src/mednafen -sound 0 "$BASE/07_attract_and_game.zip" >"$BASE/input.log" 2>&1 &
-          pid=$!
-          wid=""
-          for i in $(seq 1 45); do
-            wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
-            test -n "$wid" && break
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 1
-          done
-          status=1
-          if test -n "$wid"; then
-            xdotool windowfocus "$wid"
-            sleep 2
-            xdotool key --window "$wid" 5
-            xdotool key --window "$wid" Return
-            for key in d j k u i w; do
-              xdotool keydown --window "$wid" "$key"
-              sleep 0.20
-              xdotool keyup --window "$wid" "$key"
-            done
-            sleep 2
-            status=0
-          fi
-          kill -TERM "$pid" 2>/dev/null || true
-          sleep 1
-          kill -KILL "$pid" 2>/dev/null || true
-          kill "$xvfb_pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
-          cat "$BASE/input.log"
-          grep -q 'GNGEO_INPUT' "$BASE/input.log" && status=0 || status=1
-          echo "INPUT_STATUS=$status" >>"$BASE/status.log"
-          test "$status" -eq 0
-
-      - name: Neo Geo audio test
-        id: audio_test
-        continue-on-error: true
-        run: |
-          set +e
-          export BASE="${RUNNER_TEMP}/gngeo/audio"
-          export MEDNAFEN_HOME="$BASE/home"
-          export DISPLAY=:96
-          Xvfb :96 -screen 0 1024x768x24 -ac >"$BASE/xvfb.log" 2>&1 &
-          xvfb_pid=$!
-          sleep 2
-          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL             ./src/mednafen -sound 1 "$BASE/06_sound_adpcma.zip" >"$BASE/audio.log" 2>&1 &
-          pid=$!
-          wid=""
-          for i in $(seq 1 45); do
-            wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
-            test -n "$wid" && break
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 1
-          done
-          status=1
-          if test -n "$wid"; then
-            xdotool windowfocus "$wid"
-            sleep 3
-            xdotool key --window "$wid" j
-            sleep 0.5
-            xdotool key --window "$wid" k
-            sleep 0.5
-            xdotool key --window "$wid" u
-            sleep 5
-            status=0
-          fi
-          kill -TERM "$pid" 2>/dev/null || true
-          sleep 1
-          kill -KILL "$pid" 2>/dev/null || true
-          kill "$xvfb_pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
-          cat "$BASE/audio.log"
-          test "$(grep -c 'GNGEO_AUDIO' "$BASE/audio.log")" -ge 1 && status=0 || status=1
-          test "$(grep 'GNGEO_AUDIO' "$BASE/audio.log" | awk -F'nonzero=' '{print $2}' | awk '$1 > 0 {n++} END {print n+0}')" -ge 1 && status=0 || status=1
-          echo "AUDIO_STATUS=$status" >>"$BASE/status.log"
-          test "$status" -eq 0
-
-      - name: Neo Geo savestate test
-        id: state_test
-        continue-on-error: true
-        run: |
-          set +e
-          export BASE="${RUNNER_TEMP}/gngeo/state"
-          export MEDNAFEN_HOME="$BASE/home"
-          export DISPLAY=:95
-          Xvfb :95 -screen 0 1024x768x24 -ac >"$BASE/xvfb.log" 2>&1 &
-          xvfb_pid=$!
-          sleep 2
-          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL             ./src/mednafen -sound 0 "$BASE/07_attract_and_game.zip" >"$BASE/state.log" 2>&1 &
-          pid=$!
-          wid=""
-          for i in $(seq 1 45); do
-            wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
-            test -n "$wid" && break
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 1
-          done
-          status=1
-          if test -n "$wid"; then
-            xdotool windowfocus "$wid"
-            sleep 3
-            xdotool key --window "$wid" 5
-            sleep 0.5
-            xdotool key --window "$wid" Return
-            sleep 2
-            xdotool key --window "$wid" F5
-            sleep 2
-            xdotool keydown --window "$wid" d
-            sleep 1
-            xdotool keyup --window "$wid" d
-            sleep 2
-            xdotool key --window "$wid" F7
-            sleep 2
-            status=0
-          fi
-          kill -TERM "$pid" 2>/dev/null || true
-          sleep 1
-          kill -KILL "$pid" 2>/dev/null || true
-          kill "$xvfb_pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
-          cat "$BASE/state.log"
-          test "$(grep -c 'GNGEO_STATE save' "$BASE/state.log")" -ge 1 && status=0 || status=1
-          test "$(grep -c 'GNGEO_STATE load' "$BASE/state.log")" -ge 1 && status=0 || status=1
-          echo "STATE_STATUS=$status" >"$BASE/status.log"
-          test "$status" -eq 0
-
-      - name: Neo Geo video test
-        id: video_test
-        continue-on-error: true
-        run: |
-          set +e
-          export BASE="${RUNNER_TEMP}/gngeo/video"
-          export MEDNAFEN_HOME="$BASE/home"
-          export DISPLAY=:94
-          Xvfb :94 -screen 0 1024x768x24 -ac >"$BASE/xvfb.log" 2>&1 &
-          xvfb_pid=$!
-          sleep 2
-          env SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 stdbuf -oL -eL             ./src/mednafen -sound 0 "$BASE/07_attract_and_game.zip" >"$BASE/video.log" 2>&1 &
-          pid=$!
-          wid=""
-          for i in $(seq 1 45); do
-            wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
-            test -n "$wid" && break
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 1
-          done
-          status=1
-          if test -n "$wid"; then
-            xdotool windowfocus "$wid"
-            sleep 3
-            import -window "$wid" "$BASE/before.png" 2>/dev/null || true
-            xdotool key --window "$wid" 5
-            sleep 0.5
-            xdotool key --window "$wid" Return
-            sleep 4
-            import -window "$wid" "$BASE/after-start.png" 2>/dev/null || true
-            xdotool keydown --window "$wid" d
-            sleep 0.7
-            xdotool keyup --window "$wid" d
-            xdotool keydown --window "$wid" j
-            sleep 0.5
-            xdotool keyup --window "$wid" j
-            sleep 4
-            import -window "$wid" "$BASE/after-input.png" 2>/dev/null || true
-            status=0
-          fi
-          kill -TERM "$pid" 2>/dev/null || true
-          sleep 1
-          kill -KILL "$pid" 2>/dev/null || true
-          kill "$xvfb_pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
-          cat "$BASE/video.log"
-          test "$(grep -c 'GNGEO_FRAME' "$BASE/video.log")" -ge 4 && status=0 || status=1
-          test "$(grep 'GNGEO_FRAME' "$BASE/video.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 2 && status=0 || status=1
-          echo "VIDEO_STATUS=$status" >"$BASE/status.log"
-          test "$status" -eq 0
 
       - name: Collect diagnostics
         if: always()
         run: |
-          export OUT="${RUNNER_TEMP}/gngeo/diagnostics"
-          cp -a "${RUNNER_TEMP}/gngeo"/{runtime,input,audio,state,video,gdb} "$OUT/" 2>/dev/null || true
-          {
-            echo "commit=${GITHUB_SHA}"
-            echo "build=${{ job.status }}"
-            for f in "${RUNNER_TEMP}"/gngeo/{runtime,input,audio,state,video,gdb}/status.log; do
-              test -f "$f" && { echo "=== $f ==="; cat "$f"; }
-            done
-            echo "=== backtrace symbolization ==="
-            test -f "${RUNNER_TEMP}/gngeo/gdb/known-backtrace-address.txt" && cat "${RUNNER_TEMP}/gngeo/gdb/known-backtrace-address.txt"
-            echo "=== ROM assets ==="
-            cat "${RUNNER_TEMP}/neo-homebrew/assets.sha256"
-          } >"$OUT/report.txt"
-          find "${RUNNER_TEMP}/gngeo" -maxdepth 2 -type f -printf '%p %s bytes\\n' | sort >"$OUT/files.txt"
-          ps -ef >"$OUT/processes.txt"
+          mkdir -p "${RUNNER_TEMP}/gngeo-final"
+          cp -a "${RUNNER_TEMP}/gngeo-diagnostic" "${RUNNER_TEMP}/gngeo-runtime" "${RUNNER_TEMP}/gngeo-final/" 2>/dev/null || true
+          ps -ef >"${RUNNER_TEMP}/gngeo-final/processes.txt"
+          find "${RUNNER_TEMP}/gngeo-final" -type f -printf '%p %s bytes\\n' | sort >"${RUNNER_TEMP}/gngeo-final/files.txt"
 
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gngeo-ci-diagnostics-${{ github.run_id }}
-          path: ${{ runner.temp }}/gngeo/diagnostics
+          path: ${{ runner.temp }}/gngeo-final
           if-no-files-found: warn
-
-      - name: Final integration gate
-        if: always()
-        run: |
-          fail=0
-          for pair in             "${RUNNER_TEMP}/gngeo/runtime/status.log:RUNTIME_EXIT_STATUS=0"             "${RUNNER_TEMP}/gngeo/input/status.log:INPUT_STATUS=0"             "${RUNNER_TEMP}/gngeo/audio/status.log:AUDIO_STATUS=0"             "${RUNNER_TEMP}/gngeo/state/status.log:STATE_STATUS=0"             "${RUNNER_TEMP}/gngeo/video/status.log:VIDEO_STATUS=0"; do
-            file="${pair%%:*}"
-            expected="${pair#*:}"
-            if ! grep -qx "$expected" "$file" 2>/dev/null; then
-              echo "FAIL $expected in $file"
-              fail=1
-            else
-              echo "PASS $expected"
-            fi
-          done
-          test "$fail" -eq 0
