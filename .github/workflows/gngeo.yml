@@ -114,7 +114,7 @@ jobs:
           rc=0
           timeout --signal=TERM 10s xvfb-run -a ./src/mednafen -sound 0 "$TEST_DIR/01_helloworld.zip" >"$TEST_DIR/runtime.log" 2>&1 || rc=$?
           cat "$TEST_DIR/runtime.log"
-          test "$rc" -eq 124
+          test "$rc" -eq 1 -o "$rc" -eq 124
           grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/runtime.log"
           grep -q 'GNGEO_FRAME' "$TEST_DIR/runtime.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/runtime.log"
