@@ -210,9 +210,6 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
             if(!stream) stream = GnGeoOpenBiosFile(bios_archive.get(), "sfix.sfix", 0x20000, 0);
         }
         if(!stream) {
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_DRIVER entry-miss=%s\\n", name.c_str());
-#endif
         return false;
     }
         Uint32 size = (Uint32)stream->size();
