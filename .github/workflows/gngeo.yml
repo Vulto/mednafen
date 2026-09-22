@@ -53,17 +53,9 @@ jobs:
           git clone --depth 1 https://github.com/neogeodev/neopenbios "$RUNNER_TEMP/neopenbios"
           test -f "$RUNNER_TEMP/neopenbios/LICENSE"
           make -C "$RUNNER_TEMP/neopenbios"
+          test -f "$RUNNER_TEMP/neopenbios/neopenbios.bin"
           mkdir -p "$RUNNER_TEMP/mednafen-home/firmware"
-          bios="$RUNNER_TEMP/neopenbios/neopenbios.bin"
-          test -f "$bios"
-          sp1="$RUNNER_TEMP/neopenbios/output/sp1.bin"
-          m1="$RUNNER_TEMP/neopenbios/output/m1.bin"
-          sfix="$RUNNER_TEMP/neopenbios/output/sfix.bin"
-          test -f "$sp1"
-          test -f "$m1"
-          test -f "$sfix"
-          (cd "$RUNNER_TEMP/neopenbios/output" && zip -q "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" sp1.bin m1.bin sfix.bin)
-          unzip -Z1 "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" | sort
+          cp "$RUNNER_TEMP/neopenbios/neopenbios.bin" "$RUNNER_TEMP/mednafen-home/firmware/neogeo.bin"
 
       - name: Neo Geo homebrew runtime test
         run: |
@@ -263,15 +255,11 @@ jobs:
           cp -a "$RUNNER_TEMP/gngeo-test/." "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
           {
             echo "commit=$GITHUB_SHA"
-            echo "=== Neo Geo file status ==="
-            stat src/gngeo/puzzledp.zip 2>&1 || true
-            git status --short src/gngeo/puzzledp.zip 2>&1 || true
-            echo "=== Neo Geo tracked files ==="
-            git ls-files | grep -Ei 'kof98' || true
-            echo "=== Neo Geo archive metadata ==="
-            unzip -Z1 src/gngeo/puzzledp.zip 2>&1 | sort || true
-            sha256sum src/gngeo/puzzledp.zip 2>&1 || true
-            echo "=== trace markers ==="
+            echo "=== homebrew fixture status
+            stat "$RUNNER_TEMP/puzzledp.zip" 2>&1 || true
+            sha256sum "$RUNNER_TEMP/puzzledp.zip" 2>&1 || true
+            unzip -Z1 "$RUNNER_TEMP/puzzledp.zip" 2>&1 | sort || true
+            echo "=== trace markers ===""
             grep -RhE 'GNGEO_(LOAD|68K|FRAME|INPUT|AUDIO|STATE)' "$RUNNER_TEMP/gngeo-test" 2>/dev/null | tail -n 2000 || true
             echo "=== core symbol ==="
             nm src/mednafen 2>/dev/null | grep 'EmulatedGnGeo' || true
@@ -282,7 +270,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gngeo-kof98-diagnostics-${{ github.run_id }}
+          name: gngeo-homebrew-diagnostics-${{ github.run_id }}
           path: ${{ runner.temp }}/gngeo-diagnostics
           if-no-files-found: warn
       - name: GnGeo source audit
