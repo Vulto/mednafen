@@ -143,6 +143,12 @@ static void Emulate(EmulateSpecStruct *espec){
 #ifdef GNGEO_CI_STATE_TRACE
 static unsigned GnGeoStateSaveCount;
 static unsigned GnGeoStateLoadCount;
+static uint32_t GnGeoStateHash(const uint8 *data,size_t size)
+{
+ uint32_t h=2166136261u;
+ for(size_t i=0;i<size;i++){h^=data[i];h*=16777619u;}
+ return h;
+}
 #endif
 
 static void StateAction(StateMem *sm,const unsigned load,const bool data_only){
@@ -155,7 +161,9 @@ static void StateAction(StateMem *sm,const unsigned load,const bool data_only){
  MDFNSS_StateAction(sm,load,data_only,sf,"GNGEO");
  if(load) GnGeoCoreStateSaveLoad(StateBlob.data(),1);
 #ifdef GNGEO_CI_STATE_TRACE
+ uint32_t stateHash=GnGeoStateHash(StateBlob.data(),StateBlob.size());
  if(load) GnGeoStateLoadCount++; else GnGeoStateSaveCount++;
+ fprintf(stderr,"GNGEO_STATE %s size=%zu hash=%08x\\n",load?"load":"save",StateBlob.size(),stateHash);
 #endif
 }
 
