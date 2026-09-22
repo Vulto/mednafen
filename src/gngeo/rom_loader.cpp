@@ -248,12 +248,6 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_m68k, size, REGION_MAIN_CPU_BIOS) != 0) return false;
         if(stream->read(roms->bios_m68k.p, size) != size) return false;
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_BIOS_MAIN size=%u bytes=%02x%02x%02x%02x%02x%02x%02x%02x\\n",
-            size,
-            roms->bios_m68k.p[0], roms->bios_m68k.p[1], roms->bios_m68k.p[2], roms->bios_m68k.p[3],
-            roms->bios_m68k.p[4], roms->bios_m68k.p[5], roms->bios_m68k.p[6], roms->bios_m68k.p[7]);
-#endif
     }
     return true;
 }
@@ -266,15 +260,9 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
         gf->outside.dir + "/gngeo_data.zip";
     std::unique_ptr<Mednafen::ArchiveReader> archive(
         Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
-#ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_DRIVER archive=%s opened=%d\\n", path.c_str(), archive ? 1 : 0);
-#endif
     if(!archive) return false;
 
     std::string name = "rom/" + gf->outside.fbase + ".drv";
-#ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_DRIVER entry=%s files=%u\\n", name.c_str(), (unsigned)archive->num_files());
-#endif
     std::unique_ptr<Mednafen::Stream> stream;
     try {
         stream.reset(archive->open(name, Mednafen::VirtualFS::MODE_READ));
@@ -314,14 +302,8 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
                 } catch(const Mednafen::MDFN_Error&) {}
                 if(stream) break;
             }
-#ifdef GNGEO_CI_BACKTRACE
-            fprintf(stderr, "GNGEO_DRIVER file=%s\\n", entry->c_str());
-#endif
         }
     }
-#ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_DRIVER stream=%d\\n", stream ? 1 : 0);
-#endif
     if(!stream) return false;
 
     uint64 size = stream->size();
@@ -357,9 +339,6 @@ bool Mednafen::GnGeoHasDriver(Mednafen::GameFile *gf)
 bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system, COUNTRY country)
 {
     memset(roms, 0, sizeof(*roms));
-#ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_LOAD start gf=%d vfs=%d outside_vfs=%d fbase=%s\\n", gf ? 1 : 0, (gf && gf->vfs) ? 1 : 0, (gf && gf->outside.vfs) ? 1 : 0, (gf ? gf->outside.fbase.c_str() : ""));
-#endif
     if(!gf || !gf->outside.vfs) return false;
 
     Uint32 drv_size=0;
@@ -382,27 +361,14 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     auto read_drv=[&](void *dst,size_t n)->bool { if((size_t)(de-dp)<n)return false; memcpy(dst,dp,n);dp+=n;return true; };
     ROM_DEF drv_def; memset(&drv_def,0,sizeof(drv_def));
     if(!read_drv(drv_def.name,sizeof(drv_def.name)) || !read_drv(drv_def.parent,sizeof(drv_def.parent)) || !read_drv(drv_def.longname,sizeof(drv_def.longname)) || !read_drv(&drv_def.year,sizeof(drv_def.year))) {
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_LOAD driver_header_parse_failed size=%llu remaining=%llu\\n", (unsigned long long)drv_size, (unsigned long long)(de-dp));
-#endif
         return false;
     }
     for(unsigned i=0;i<10;i++) if(!read_drv(&drv_def.romsize[i],sizeof(drv_def.romsize[i]))) {
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_LOAD driver_region_sizes_parse_failed index=%u remaining=%llu\\n", i, (unsigned long long)(de-dp));
-#endif
         return false;
     }
     if(!read_drv(&drv_def.nb_romfile,sizeof(drv_def.nb_romfile)) || drv_def.nb_romfile>32) {
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_LOAD driver_count_parse_failed count=%u remaining=%llu\\n", drv_def.nb_romfile, (unsigned long long)(de-dp));
-#endif
         return false;
     }
-#ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_LOAD driver name=%s parent=%s year=%u romfiles=%u size=%llu\\n",
-        drv_def.name, drv_def.parent, drv_def.year, drv_def.nb_romfile, (unsigned long long)drv_size);
-#endif
     for(unsigned i=0;i<drv_def.nb_romfile;i++) {
         auto &r=drv_def.rom[i];
         if(!read_drv(r.filename,sizeof(r.filename)) ||
@@ -411,15 +377,8 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
            !read_drv(&r.dest,sizeof(r.dest)) ||
            !read_drv(&r.size,sizeof(r.size)) ||
            !read_drv(&r.crc,sizeof(r.crc))) {
-#ifdef GNGEO_CI_BACKTRACE
-            fprintf(stderr, "GNGEO_LOAD driver_rom_parse_failed index=%u remaining=%llu\\n", i, (unsigned long long)(de-dp));
-#endif
             return false;
         }
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_LOAD rom[%u] file=%s region=%u src=%u dest=%u size=%u crc=%08x\\n",
-            i, r.filename, r.region, r.src, r.dest, r.size, r.crc);
-#endif
     }
 
     roms->info.name = strdup(drv_def.name);
@@ -454,9 +413,6 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(!game_archive && gf->vfs) {
         try { game_archive.reset(Mednafen::ArchiveReader::Open(gf->vfs, game_path)); game_archive_source = game_archive ? "gamefile-vfs" : "gamefile-vfs-failed"; } catch(const Mednafen::MDFN_Error&) {}
     }
-#ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_LOAD game_archive=%s opened=%d source=%s\\n", game_path.c_str(), game_archive ? 1 : 0, game_archive_source);
-#endif
     if(!game_archive) return Fail();
 
     std::unique_ptr<Mednafen::ArchiveReader> parent_archive;
@@ -474,10 +430,6 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
         const auto &r = drv_def.rom[i];
         if(GnGeoLoadRegion(game_archive.get(), roms, r.region, r.src, r.dest, r.size, r.crc, r.filename)) continue;
         if(parent_archive && GnGeoLoadRegion(parent_archive.get(), roms, r.region, r.src, r.dest, r.size, r.crc, r.filename)) continue;
-#ifdef GNGEO_CI_BACKTRACE
-        fprintf(stderr, "GNGEO_LOAD missing file=%s region=%u src=%u dest=%u size=%u crc=%08x parent=%s\\n",
-            r.filename, r.region, r.src, r.dest, r.size, r.crc, parent_archive ? "1" : "0");
-#endif
         if(r.region != REGION_FIXED_LAYER_BIOS && r.region != REGION_AUDIO_CPU_BIOS && r.region != REGION_MAIN_CPU_BIOS)
         {
             MDFN_printf("GnGeo loader: missing ROM %s (region %u, size %u, CRC %08x)\n", r.filename, r.region, r.size, r.crc);
