@@ -267,6 +267,7 @@ void cpu_68k_init(void)
 int cpu_68k_run(Uint32 nb_cycle)
 {
     static int n;
+    n = reg68k_external_execute(nb_cycle);
     //printf("pc=%x\n",regs.pc);
     /*
     pc=regs.pc;
