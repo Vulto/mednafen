@@ -274,7 +274,24 @@ void cpu_68k_init(void)
 int cpu_68k_run(Uint32 nb_cycle)
 {
     static int n;
+#ifdef GNGEO_CI_CPU_TRACE
+    static unsigned trace_calls;
+    static int trace_vector = -1;
+    int trace_now = (trace_calls < 64) || ((trace_calls & 255) == 0) ||
+        (trace_vector != (int)memory.current_vector);
+    if(trace_now)
+        fprintf(stderr, "GNGEO_68K_BEGIN call=%u line=%d pc=%08x budget=%u cycle=%u vector=%u bank=%08x\\n",
+                trace_calls, current_line, cpu_68k_getpc(), nb_cycle,
+                (unsigned)cpu68k_clocks, (unsigned)memory.current_vector,
+                (unsigned)bankaddress);
     n = reg68k_external_execute(nb_cycle);
+    if(trace_now)
+        fprintf(stderr, "GNGEO_68K_END call=%u line=%d pc=%08x done=%d cycle=%u vector=%u bank=%08x\\n",
+                trace_calls, current_line, cpu_68k_getpc(), n,
+                (unsigned)cpu68k_clocks, (unsigned)memory.current_vector,
+                (unsigned)bankaddress);
+    trace_vector = (int)memory.current_vector;
+    trace_calls++;
     //printf("pc=%x\n",regs.pc);
     /*
     pc=regs.pc;
