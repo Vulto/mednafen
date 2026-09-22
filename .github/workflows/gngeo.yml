@@ -55,14 +55,14 @@ jobs:
           cd "$RUNNER_TEMP/ngdevkit-examples"
           autoreconf -iv
           ./configure
-          make -C 01-helloworld             build/rom/01_helloworld-p1.p1             build/rom/01_helloworld-m1.m1             build/rom/01_helloworld-v1.v1             build/rom/01_helloworld-s1.s1             build/rom/01_helloworld-c1.c1             build/rom/01_helloworld-c2.c2
+          make -C 01-helloworld build/rom/01_helloworld-p1.p1 build/rom/01_helloworld-s1.s1 build/rom/01_helloworld-c1.c1 build/rom/01_helloworld-c2.c2
           mkdir -p "$RUNNER_TEMP/01_helloworld"
-          cp 01-helloworld/build/rom/01_helloworld-*.p1 "$RUNNER_TEMP/01_helloworld/"
-          cp 01-helloworld/build/rom/01_helloworld-*.m1 "$RUNNER_TEMP/01_helloworld/"
-          cp 01-helloworld/build/rom/01_helloworld-*.v1 "$RUNNER_TEMP/01_helloworld/"
-          cp 01-helloworld/build/rom/01_helloworld-*.s1 "$RUNNER_TEMP/01_helloworld/"
-          cp 01-helloworld/build/rom/01_helloworld-*.c1 "$RUNNER_TEMP/01_helloworld/"
-          cp 01-helloworld/build/rom/01_helloworld-*.c2 "$RUNNER_TEMP/01_helloworld/"
+          cp 01-helloworld/build/rom/01_helloworld-p1.p1 "$RUNNER_TEMP/01_helloworld/"
+          cp 01-helloworld/build/rom/01_helloworld-s1.s1 "$RUNNER_TEMP/01_helloworld/"
+          cp 01-helloworld/build/rom/01_helloworld-c1.c1 "$RUNNER_TEMP/01_helloworld/"
+          cp 01-helloworld/build/rom/01_helloworld-c2.c2 "$RUNNER_TEMP/01_helloworld/"
+          truncate -s 131072 "$RUNNER_TEMP/01_helloworld/01_helloworld-m1.m1"
+          truncate -s 524288 "$RUNNER_TEMP/01_helloworld/01_helloworld-v1.v1"
           p1="$RUNNER_TEMP/01_helloworld/01_helloworld-p1.p1"
           m1="$RUNNER_TEMP/01_helloworld/01_helloworld-m1.m1"
           v1="$RUNNER_TEMP/01_helloworld/01_helloworld-v1.v1"
@@ -71,9 +71,10 @@ jobs:
           c2="$RUNNER_TEMP/01_helloworld/01_helloworld-c2.c2"
           test -f "$p1" -a -f "$m1" -a -f "$v1" -a -f "$s1" -a -f "$c1" -a -f "$c2"
           test -f /usr/share/ngdevkit/gngeo_data.zip
-          python3 /usr/share/ngdevkit/romtool.py             --build hash             --format gngeo             --prom "$p1"             --mrom "$m1"             --vrom "$v1"             --srom "$s1"             --crom "$c1" "$c2"             --name 01_helloworld             --long-name "Simple hello world"             --year 2026             --publisher "Homebrew"             --output "$RUNNER_TEMP/gngeo_data.zip"             -x gngeo.data=/usr/share/ngdevkit/gngeo_data.zip
+          python3 /usr/share/ngdevkit/romtool.py --build hash --format gngeo --prom "$p1" --mrom "$m1" --vrom "$v1" --srom "$s1" --crom "$c1" "$c2" --name 01_helloworld --long-name "Simple hello world" --year 2026 --publisher "Homebrew" --output "$RUNNER_TEMP/gngeo_data.zip" -x gngeo.data=/usr/share/ngdevkit/gngeo_data.zip
           unzip -Z1 "$RUNNER_TEMP/gngeo_data.zip" | grep -q 'rom/01_helloworld.drv'
-          python3 /usr/share/ngdevkit/romtool.py             --build cartridge             --format zip             --prom "$p1"             --mrom "$m1"             --vrom "$v1"             --srom "$s1"             --crom "$c1" "$c2"             --name 01_helloworld             --long-name "Simple hello world"             --output "$RUNNER_TEMP/01_helloworld.zip"
+          python3 /usr/share/ngdevkit/romtool.py --build cartridge --format zip --prom "$p1" --mrom "$m1" --vrom "$v1" --srom "$s1" --crom "$c1" "$c2" --name 01_helloworld --long-name "Simple hello world" --output "$RUNNER_TEMP/01_helloworld.zip"
+
       - name: Prepare open source Neo Geo BIOS
         run: |
           ngdevkitRoot=$(pkg-config --variable=sharedir ngdevkit)
