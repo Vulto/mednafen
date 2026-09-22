@@ -233,6 +233,12 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_m68k, size, REGION_MAIN_CPU_BIOS) != 0) return false;
         if(stream->read(roms->bios_m68k.p, size) != size) return false;
+#ifdef GNGEO_CI_BACKTRACE
+        fprintf(stderr, "GNGEO_BIOS_MAIN size=%u bytes=%02x%02x%02x%02x%02x%02x%02x%02x\\n",
+            size,
+            roms->bios_m68k.p[0], roms->bios_m68k.p[1], roms->bios_m68k.p[2], roms->bios_m68k.p[3],
+            roms->bios_m68k.p[4], roms->bios_m68k.p[5], roms->bios_m68k.p[6], roms->bios_m68k.p[7]);
+#endif
     }
     return true;
 }
