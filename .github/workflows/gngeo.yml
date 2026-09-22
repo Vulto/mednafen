@@ -96,24 +96,10 @@ jobs:
           mkdir -p "$TEST_DIR"
           cp "$RUNNER_TEMP/01_helloworld.zip" "$TEST_DIR/01_helloworld.zip"
           cp "$RUNNER_TEMP/gngeo_data.zip" "$TEST_DIR/gngeo_data.zip"
-          set +e
-          SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/01_helloworld.zip" >"$TEST_DIR/runtime.log" 2>&1 &
-          pid=$!
-          running=0
-          sleep 5
-          if kill -0 "$pid" 2>/dev/null; then
-            running=1
-            sleep 5
-            kill -TERM "$pid" 2>/dev/null
-            wait "$pid"
-            rc=$?
-          else
-            wait "$pid"
-            rc=$?
-          fi
-          set -e
+          rc=0
+          timeout --signal=TERM 10s xvfb-run -a ./src/mednafen -sound 0 "$TEST_DIR/01_helloworld.zip" >"$TEST_DIR/runtime.log" 2>&1 || rc=$?
           cat "$TEST_DIR/runtime.log"
-          test "$running" -eq 1
+          test "$rc" -eq 124
           grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/runtime.log"
           grep -q 'GNGEO_FRAME' "$TEST_DIR/runtime.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/runtime.log"
