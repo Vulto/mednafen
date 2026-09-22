@@ -20,21 +20,8 @@ Uint16 play_buffer[16384];
 static GNG_Surface FrameSurface;
 static Uint16 FramePixels[352*256];
 static int AudioRate=44100;
-#ifdef GNGEO_CI_AUDIO_TRACE
-static unsigned GnGeoAudioCalls;
-#endif
 static int CoreInitialized=0;
 
-#ifdef GNGEO_CI_FRAME_TRACE
-static uint32_t GnGeoFrameNumber;
-
-static uint32_t GnGeoFrameHash(void)
-{
- uint32_t h=2166136261u;
- for(unsigned y=0;y<224;y++) for(unsigned x=0;x<320;x++) { h^=FramePixels[(y+16)*352+(x+16)]; h*=16777619u; }
- return h;
-}
-#endif
 int Fc=0, LastLine=0, SkipFrame=0, SkipNext=0;
 
 static void GnGeoSoundIrq(int irq)
@@ -68,17 +55,11 @@ void init_neo(void)
  FrameSurface.w=352; FrameSurface.h=256; FrameSurface.pitch=352*2; FrameSurface.pixels=FramePixels;
  buffer=&FrameSurface; visible_area.x=16; visible_area.y=16; visible_area.w=320; visible_area.h=224;
  memset(FramePixels,0,sizeof(FramePixels));
-#ifdef GNGEO_CI_FRAME_TRACE
- GnGeoFrameNumber=0;
-#endif
  memory.vid.modulo=1;
  cpu_68k_init(); pd4990a_init();
  cpu_z80_init();
  conf.sound=1;
  YM2610_sh_start();
-#ifdef GNGEO_CI_AUDIO_TRACE
- GnGeoAudioCalls=0;
-#endif
  init_video();
  neogeo_reset();
  update_all_pal();
@@ -108,16 +89,6 @@ int GnGeoCoreInitRoms(void) {
  memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80);
  memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80);
  memory.current_vector=0;
-#ifdef GNGEO_CI_CPU_TRACE
- fprintf(stderr,
-  "GNGEO_VECTOR game=%02x%02x%02x%02x%02x%02x%02x%02x bios=%02x%02x%02x%02x%02x%02x%02x%02x cpu=%02x%02x%02x%02x%02x%02x%02x%02x\\n",
-  memory.game_vector[0],memory.game_vector[1],memory.game_vector[2],memory.game_vector[3],
-  memory.game_vector[4],memory.game_vector[5],memory.game_vector[6],memory.game_vector[7],
-  memory.rom.bios_m68k.p[0],memory.rom.bios_m68k.p[1],memory.rom.bios_m68k.p[2],memory.rom.bios_m68k.p[3],
-  memory.rom.bios_m68k.p[4],memory.rom.bios_m68k.p[5],memory.rom.bios_m68k.p[6],memory.rom.bios_m68k.p[7],
-  memory.rom.cpu_m68k.p[0],memory.rom.cpu_m68k.p[1],memory.rom.cpu_m68k.p[2],memory.rom.cpu_m68k.p[3],
-  memory.rom.cpu_m68k.p[4],memory.rom.cpu_m68k.p[5],memory.rom.cpu_m68k.p[6],memory.rom.cpu_m68k.p[7]);
-#endif
  convert_all_tile(&memory.rom);
  convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p);
  if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage);
@@ -178,10 +149,6 @@ int GnGeoRunFrame(void)
  pd4990a_addretrace();
  if(Fc>=neogeo_frame_counter_speed){Fc=0;neogeo_frame_counter++;} Fc++;
  memory.watchdog++; if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;} cpu_68k_interrupt(1);
-#ifdef GNGEO_CI_FRAME_TRACE
- GnGeoFrameNumber++;
- if((GnGeoFrameNumber%30)==0) printf("GNGEO_FRAME frame=%u hash=%08x\n",GnGeoFrameNumber,GnGeoFrameHash());
-#endif
  return 1;
 }
 
