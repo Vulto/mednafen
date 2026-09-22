@@ -398,9 +398,17 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(drv_def.romsize[REGION_AUDIO_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_AUDIO_BIOS; if(GnGeoAllocateRegion(&roms->bios_audio, drv_def.romsize[REGION_AUDIO_CPU_BIOS], REGION_AUDIO_CPU_BIOS) != 0) return Fail(); }
     if(drv_def.romsize[REGION_FIXED_LAYER_BIOS]) { roms->info.flags |= HAS_CUSTOM_SFIX_BIOS; if(GnGeoAllocateRegion(&roms->bios_sfix, drv_def.romsize[REGION_FIXED_LAYER_BIOS], REGION_FIXED_LAYER_BIOS) != 0) return Fail(); }
     std::string game_path = gf->outside.dir.empty() ? gf->outside.fbase + ".zip" : gf->outside.dir + "/" + gf->outside.fbase + ".zip";
-    std::unique_ptr<Mednafen::ArchiveReader> game_archive(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
+    std::unique_ptr<Mednafen::ArchiveReader> game_archive;
+    const char *game_archive_source = "none";
+    try { game_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path)); game_archive_source = game_archive ? "outside" : "outside-failed"; } catch(const Mednafen::MDFN_Error&) {}
+    if(!game_archive) {
+        try { game_archive.reset(Mednafen::ArchiveReader::Open(&Mednafen::NVFS, game_path)); game_archive_source = game_archive ? "nvfs" : "nvfs-failed"; } catch(const Mednafen::MDFN_Error&) {}
+    }
+    if(!game_archive && gf->vfs) {
+        try { game_archive.reset(Mednafen::ArchiveReader::Open(gf->vfs, game_path)); game_archive_source = game_archive ? "gamefile-vfs" : "gamefile-vfs-failed"; } catch(const Mednafen::MDFN_Error&) {}
+    }
 #ifdef GNGEO_CI_BACKTRACE
-    fprintf(stderr, "GNGEO_LOAD game_archive=%s opened=%d\\n", game_path.c_str(), game_archive ? 1 : 0);
+    fprintf(stderr, "GNGEO_LOAD game_archive=%s opened=%d source=%s\\n", game_path.c_str(), game_archive ? 1 : 0, game_archive_source);
 #endif
     if(!game_archive) return Fail();
 
@@ -408,7 +416,10 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(drv_def.parent[0])
     {
         std::string parent_path = gf->outside.dir.empty() ? std::string(drv_def.parent) + ".zip" : gf->outside.dir + "/" + std::string(drv_def.parent) + ".zip";
-        parent_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, parent_path));
+        try { parent_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, parent_path)); } catch(const Mednafen::MDFN_Error&) {}
+        if(!parent_archive) {
+            try { parent_archive.reset(Mednafen::ArchiveReader::Open(&Mednafen::NVFS, parent_path)); } catch(const Mednafen::MDFN_Error&) {}
+        }
     }
 
     for(unsigned i = 0; i < drv_def.nb_romfile; i++)
