@@ -357,6 +357,13 @@ t_ipclist *cpu68k_makeipclist(uint32 pc)
 
 
   do {
+#ifdef GNGEO_CI_CPU_TRACE
+    if (list->pc == 0x122 && instrs == 1) {
+      Uint8 *raw = mem68k_memptr[0x122 >> 12](0x122);
+      fprintf(stderr, "GNGEO_PC122 raw=%02x%02x%02x%02x%02x%02x word=%04x\\n",
+              raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], fetchword(0x122));
+    }
+#endif
     instrs++;
     if (instrs > size) {
 	if (size > 10000) {
