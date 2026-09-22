@@ -100,8 +100,7 @@ jobs:
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          set +e
-          xvfb-run -a bash -c '
+          xvfb-run -a bash -c '/
             SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/puzzledp.zip" >"$TEST_DIR/input.log" 2>&1 &
             pid=$!
             wid=""
@@ -168,7 +167,6 @@ jobs:
             kill -TERM "$pid"
             wait "$pid" || true
           '
-          set -e
           cat "$TEST_DIR/audio.log"
           grep -q 'GNGEO_AUDIO' "$TEST_DIR/audio.log"
           test "$(grep 'GNGEO_AUDIO' "$TEST_DIR/audio.log" | awk -F'nonzero=' '{print $2}' | awk '$1 > 0 {n++} END {print n+0}')" -ge 1
