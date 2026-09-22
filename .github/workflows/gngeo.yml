@@ -91,8 +91,14 @@ jobs:
           make -C nullbios -j"$(nproc)"
           bios="$RUNNER_TEMP/ngdevkit/nullbios/rom/neogeo.zip"
           test -f "$bios"
+          mkdir -p "$RUNNER_TEMP/mednafen-bios"
+          unzip -q "$bios" -d "$RUNNER_TEMP/mednafen-bios"
+          dd if="$RUNNER_TEMP/mednafen-bios/sp-s2.sp1" of="$RUNNER_TEMP/mednafen-bios/sp-s2.raw" conv=swab status=none
+          mv "$RUNNER_TEMP/mednafen-bios/sp-s2.raw" "$RUNNER_TEMP/mednafen-bios/sp-s2.sp1"
+          rm -f "$RUNNER_TEMP/mednafen-bios/neogeo.zip"
+          (cd "$RUNNER_TEMP/mednafen-bios" && zip -q "$RUNNER_TEMP/neogeo.zip" 000-lo.lo sm1.sm1 sfix.sfix sp-s2.sp1)
           mkdir -p "$RUNNER_TEMP/mednafen-home/firmware"
-          cp "$bios" "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/neogeo.zip" "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip"
           unzip -t "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" >/dev/null
           unzip -p "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" sp-s2.sp1 | od -An -tx1 -N8
 
