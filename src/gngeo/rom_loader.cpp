@@ -260,6 +260,12 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
     } catch(const Mednafen::MDFN_Error&) {}
 
     if(!stream) {
+        try {
+            stream.reset(archive->open("/" + name, Mednafen::VirtualFS::MODE_READ));
+        } catch(const Mednafen::MDFN_Error&) {}
+    }
+
+    if(!stream) {
         std::string lower = gf->outside.fbase;
         for(char &ch : lower)
             ch = (char)std::tolower((unsigned char)ch);
