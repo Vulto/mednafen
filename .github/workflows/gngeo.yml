@@ -42,7 +42,6 @@ jobs:
           make -j"$(nproc)"
 
       - name: Neo Geo KOF 98 runtime test
-        continue-on-error: true
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
@@ -57,8 +56,7 @@ jobs:
           cp src/gngeo/kof98.zip "$TEST_DIR/kof98.zip"
           sha256sum src/gngeo/kof98.zip
           unzip -Z1 src/gngeo/kof98.zip | sort | tee "$TEST_DIR/kof98-contents.txt"
-          set +e
-          timeout --signal=KILL 30s xvfb-run -a bash -c '
+/          set -e\n          cat "\$TEST_DIR\/mednafen.log"/m
             SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
             pid=$!
             wid=""
@@ -86,7 +84,6 @@ jobs:
           test "$(grep 'GNGEO_FRAME' "$TEST_DIR/mednafen.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 4
 
       - name: Neo Geo input test
-        continue-on-error: true
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-input-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
@@ -135,7 +132,6 @@ jobs:
           grep -Eq 'GNGEO_INPUT .*p1=[0-9a-f]{2}' "$TEST_DIR/input.log"
 
       - name: Neo Geo audio test
-        continue-on-error: true
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-audio-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
@@ -167,7 +163,6 @@ jobs:
           test "$(grep 'GNGEO_AUDIO' "$TEST_DIR/audio.log" | awk -F'nonzero=' '{print $2}' | awk '$1 > 0 {n++} END {print n+0}')" -ge 1
 
       - name: Neo Geo savestate test
-        continue-on-error: true
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-state-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
@@ -211,7 +206,6 @@ jobs:
           test "$(grep 'GNGEO_FRAME' "$TEST_DIR/state.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 3
 
       - name: Neo Geo gameplay video test
-        continue-on-error: true
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-gameplay-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
