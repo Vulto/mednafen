@@ -51,9 +51,12 @@ jobs:
           cd "$RUNNER_TEMP/ngdevkit-examples"
           autoreconf -iv
           ./configure
-          make -C 01-helloworld
-          test -f 01-helloworld/build/01_helloworld.zip
-          cp 01-helloworld/build/01_helloworld.zip "$RUNNER_TEMP/puzzledp.zip"
+          make -C mcmc
+          test -f mcmc/build/rom/puzzledp.zip
+          cp mcmc/build/rom/puzzledp.zip "$RUNNER_TEMP/puzzledp.zip"
+          test -f /usr/share/ngdevkit/gngeo_data.zip
+          python3 /usr/share/ngdevkit/romtool.py gngeo             --input mcmc/build/rom             --output "$RUNNER_TEMP/gngeo_data.zip"             --data /usr/share/ngdevkit/gngeo_data.zip
+          unzip -Z1 "$RUNNER_TEMP/gngeo_data.zip" | grep -q 'rom/puzzledp.drv'
 
       - name: Prepare open source Neo Geo BIOS
         run: |
