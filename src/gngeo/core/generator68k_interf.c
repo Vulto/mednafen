@@ -249,7 +249,6 @@ void cpu_68k_reset(void)
 
 void cpu_68k_init(void)
 {
-    printf("GEN68k CPU INIT\\n");
 
     cpu68k_clearcache();
 
