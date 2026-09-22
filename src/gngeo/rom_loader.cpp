@@ -354,7 +354,17 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(!read_drv(drv_def.name,sizeof(drv_def.name)) || !read_drv(drv_def.parent,sizeof(drv_def.parent)) || !read_drv(drv_def.longname,sizeof(drv_def.longname)) || !read_drv(&drv_def.year,sizeof(drv_def.year))) return false;
     for(unsigned i=0;i<10;i++) if(!read_drv(&drv_def.romsize[i],sizeof(drv_def.romsize[i]))) return false;
     if(!read_drv(&drv_def.nb_romfile,sizeof(drv_def.nb_romfile)) || drv_def.nb_romfile>32) return false;
-    for(unsigned i=0;i<drv_def.nb_romfile;i++){ auto &r=drv_def.rom[i]; if(!read_drv(r.filename,sizeof(r.filename)) || !read_drv(&r.region,sizeof(r.region)) || !read_drv(&r.src,sizeof(r.src)) || !read_drv(&r.dest,sizeof(r.dest)) || !read_drv(&r.size,sizeof(r.size)) || !read_drv(&r.crc,sizeof(r.crc))) return false; }
+    for(unsigned i=0;i<drv_def.nb_romfile;i++) {
+        auto &r=drv_def.rom[i];
+        Uint8 padding[3];
+        if(!read_drv(r.filename,sizeof(r.filename)) ||
+           !read_drv(&r.region,sizeof(r.region)) ||
+           !read_drv(padding,sizeof(padding)) ||
+           !read_drv(&r.src,sizeof(r.src)) ||
+           !read_drv(&r.dest,sizeof(r.dest)) ||
+           !read_drv(&r.size,sizeof(r.size)) ||
+           !read_drv(&r.crc,sizeof(r.crc))) return false;
+    }
 
     roms->info.name = strdup(drv_def.name);
     roms->info.longname = strdup(drv_def.longname);
