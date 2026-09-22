@@ -37,7 +37,7 @@ jobs:
             **/.deps
             src/mednafen
             src/.libs
-          key: gngeo-build-${{ runner.os }}-v2
+          key: gngeo-build-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             gngeo-build-${{ runner.os }}-
 
@@ -68,7 +68,24 @@ jobs:
         run: |
           ccache --zero-stats
           make -j"$(nproc)"
+          make -n -j"$(nproc)" >"$RUNNER_TEMP/make-second-pass.log"
+          if grep -Eq ' -c .*\\.(c|cc|cpp)( |$)' "$RUNNER_TEMP/make-second-pass.log"; then
+            echo "Unexpected compilation work remains after the build."
+            cat "$RUNNER_TEMP/make-second-pass.log"
+            exit 1
+          fi
           ccache --show-stats
+
+      - name: Save build cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            **/*.o
+            **/.deps
+            src/mednafen
+            src/.libs
+          key: gngeo-build-${{ runner.os }}-${{ github.sha }}
 
       - name: Neo Geo KOF 98 runtime test
         run: |
@@ -84,27 +101,42 @@ jobs:
           (cd "$TEST_DIR" && zip -q "$MEDNAFEN_HOME/firmware/neogeo.zip" 000-lo.lo sp-s2.sp1 sfix.sfix sm1.sm1)
           cp src/gngeo/kof98.zip "$TEST_DIR/kof98.zip"
           set +e
-          timeout --signal=KILL 30s xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
+          timeout --signal=TERM --kill-after=5s 30s xvfb-run -a bash -c '
+            : >"$TEST_DIR/mednafen.log"
+            env SDL_AUDIODRIVER=dummy stdbuf -oL -eL ./src/mednafen -sound 0 "$TEST_DIR/kof98.zip" >"$TEST_DIR/mednafen.log" 2>&1 &
             pid=$!
+            echo "$pid" >"$TEST_DIR/mednafen.pid"
             wid=""
             for i in $(seq 1 30); do
-              wid=$(xdotool search --onlyvisible --name 'Mednafen' 2>/dev/null | head -n1)
+              wid=$(xdotool search --onlyvisible --name "Mednafen" 2>/dev/null | head -n1)
               test -n "$wid" && break
               sleep 1
             done
-            test -n "$wid"
+            echo "GNGEO_TEST_WINDOW=$wid" >"$TEST_DIR/runtime-meta.log"
+            if test -z "$wid"; then
+              echo "Mednafen window was not found."
+              pgrep -a -f "./src/mednafen" >"$TEST_DIR/processes.log" 2>&1 || true
+              exit 1
+            fi
             xdotool windowfocus "$wid"
             sleep 2
             xdotool key --window "$wid" 5
             sleep 0.5
             xdotool key --window "$wid" Return
-            sleep 8
+            sleep 12
             kill -TERM "$pid" 2>/dev/null || true
+            for i in $(seq 1 25); do
+              kill -0 "$pid" 2>/dev/null || break
+              sleep 0.2
+            done
+            kill -KILL "$pid" 2>/dev/null || true
             wait "$pid" || true
           '
+          runtime_status=$?
           set -e
+          printf 'GNGEO_TEST_STATUS=%s\n' "$runtime_status" >"$TEST_DIR/runtime-status.log"
           cat "$TEST_DIR/mednafen.log"
+          test "$runtime_status" -eq 0
           grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/mednafen.log"
           grep -q 'Selecting Bios Vector' "$TEST_DIR/mednafen.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/mednafen.log"
@@ -271,6 +303,22 @@ jobs:
           cat "$TEST_DIR/gameplay.log"
           test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/gameplay.log")" -ge 10
           test "$(grep 'GNGEO_FRAME' "$TEST_DIR/gameplay.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 4
+
+      - name: Collect Neo Geo runtime diagnostics
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/gngeo-diagnostics"
+          cp "$RUNNER_TEMP/gngeo-test/"*.log "$RUNNER_TEMP/gngeo-diagnostics/" 2>/dev/null || true
+          ps -ef >"$RUNNER_TEMP/gngeo-diagnostics/processes.txt"
+          xdotool search --onlyvisible --name "Mednafen" getwindowname %@ >"$RUNNER_TEMP/gngeo-diagnostics/windows.txt" 2>&1 || true
+
+      - name: Upload Neo Geo runtime diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gngeo-runtime-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/gngeo-diagnostics
+          if-no-files-found: warn
 
       - name: GnGeo source audit
         run: |
