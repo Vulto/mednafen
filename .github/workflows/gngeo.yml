@@ -147,7 +147,6 @@ jobs:
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          set +e
           xvfb-run -a bash -c '
             SDL_AUDIODRIVER=dummy ./src/mednafen -sound 1 -sound.driver sdl "$TEST_DIR/puzzledp.zip" >"$TEST_DIR/audio.log" 2>&1 &
             pid=$!
