@@ -10,6 +10,11 @@ extern "C" {
 }
 #include <cstring>
 #include <memory>
+#ifdef GNGEO_CI_BACKTRACE
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 namespace Mednafen { namespace MDFN_IEN_GNGEO {
 static GAME_ROMS GameRoms;
@@ -24,6 +29,15 @@ static const MDFNSetting GnGeoSettings[]={ { NULL } };
 static uint8 *InputP1,*InputP2;
 static std::vector<uint8> StateBlob;
 static unsigned CoinPulseFrames;
+#ifdef GNGEO_CI_BACKTRACE
+static void GnGeoCrashHandler(int sig)
+{
+ void *frames[64];
+ int count=backtrace(frames,64);
+ backtrace_symbols_fd(frames,count,2);
+ _exit(128+sig);
+}
+#endif
 
 static void SetInput(unsigned port,const char *type,uint8 *ptr){ if(!strcmp(type,"gamepad")){ if(port==0) InputP1=ptr; else if(port==1) InputP2=ptr; } }
 
@@ -50,6 +64,9 @@ static void ApplyInput(){
 
 static void Load(GameFile *gf)
 {
+#ifdef GNGEO_CI_BACKTRACE
+ signal(SIGSEGV,GnGeoCrashHandler);
+#endif
  memset(&GameRoms,0,sizeof(GameRoms));
  try
  {
@@ -130,8 +147,7 @@ static void DoSimpleCommand(int cmd){
  else if(cmd==MDFN_MSC_INSERT_COIN) CoinPulseFrames=2;
 }
 
-static void SetLayerEnableMask(uint64 mask){(void)mask;}
 }}
 
 using namespace Mednafen::MDFN_IEN_GNGEO;
-MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo={"gngeo","Neo Geo (GnGeo)",KnownExtensions,Mednafen::MODPRIO_INTERNAL_HIGH,NULL,PortInfo,NULL,Load,TestMagic,NULL,NULL,CloseGame,SetLayerEnableMask,"",NULL,NULL,NULL,0,Mednafen::CheatInfo_Empty,false,StateAction,Emulate,NULL,SetInput,NULL,DoSimpleCommand,NULL,GnGeoSettings,MDFN_MASTERCLOCK_FIXED(12000000),60 * 65536 * 256,Mednafen::EVFSUPPORT_RGB565,false,320,224,NULL,320,224,320,224,2};
+MDFN_HIDE extern const Mednafen::MDFNGI EmulatedGnGeo={"gngeo","Neo Geo (GnGeo)",KnownExtensions,Mednafen::MODPRIO_INTERNAL_HIGH,NULL,PortInfo,NULL,Load,TestMagic,NULL,NULL,CloseGame,NULL,NULL,NULL,NULL,NULL,0,Mednafen::CheatInfo_Empty,false,StateAction,Emulate,NULL,SetInput,NULL,DoSimpleCommand,NULL,GnGeoSettings,MDFN_MASTERCLOCK_FIXED(12000000),60 * 65536 * 256,Mednafen::EVFSUPPORT_RGB565,false,320,224,NULL,320,224,320,224,2};
