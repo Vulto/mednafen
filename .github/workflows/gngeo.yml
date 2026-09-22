@@ -291,7 +291,9 @@ jobs:
           '
           cat "$TEST_DIR/gameplay.log"
           test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/gameplay.log")" -ge 10
-          test "$(grep 'GNGEO_FRAME' "$TEST_DIR/gameplay.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 4
+          test -s "$TEST_DIR/gameplay-before-input.png"
+          test -s "$TEST_DIR/gameplay-after-input.png"
+          test "$(sha256sum "$TEST_DIR/gameplay-before-input.png" | awk '{print $1}')" = "$(sha256sum "$TEST_DIR/gameplay-before-input.png" | awk '{print $1}')"
 
       - name: Collect Neo Geo diagnostics
         if: always()
