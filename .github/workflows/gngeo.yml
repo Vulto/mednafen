@@ -82,12 +82,19 @@ jobs:
 
       - name: Prepare open source Neo Geo BIOS
         run: |
-          ngdevkitRoot=$(pkg-config --variable=sharedir ngdevkit)
-          bios=$(find "$ngdevkitRoot" -maxdepth 3 -type f -name 'neogeo.zip' | head -n1)
-          test -n "$bios"
+          git clone --depth 1 https://github.com/dciabrin/ngdevkit "$RUNNER_TEMP/ngdevkit"
+          cd "$RUNNER_TEMP/ngdevkit"
+          autoreconf -iv
+          ./configure --enable-external-toolchain --disable-examples
+          make -C runtime -j"$(nproc)"
+          make -C nullsound -j"$(nproc)"
+          make -C nullbios -j"$(nproc)"
+          bios="$RUNNER_TEMP/ngdevkit/nullbios/rom/neogeo.zip"
+          test -f "$bios"
           mkdir -p "$RUNNER_TEMP/mednafen-home/firmware"
           cp "$bios" "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip"
           unzip -t "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" >/dev/null
+          unzip -p "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" sp-s2.sp1 | od -An -tx1 -N8
 
       - name: Neo Geo homebrew runtime test
         run: |
