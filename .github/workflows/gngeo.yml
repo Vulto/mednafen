@@ -131,7 +131,7 @@ jobs:
         run: |
           export MEDNAFEN_HOME="$RUNNER_TEMP/runtime-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
-          mkdir -p "$MEDNAFEN_HOME/firmware"
+          mkdir -p "$TEST_DIR" "$MEDNAFEN_HOME/firmware"
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
           rc=0
           timeout --signal=TERM 20s xvfb-run -a ./src/mednafen -sound 0 "$TEST_DIR/01_helloworld.zip" >"$TEST_DIR/runtime.log" 2>&1 || rc=$?
