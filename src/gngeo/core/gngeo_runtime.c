@@ -103,7 +103,26 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo)
  conf.system=SYS_ARCADE; conf.country=CTY_EUROPE; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
 }
 
-int GnGeoCoreInitRoms(void) { if(GnGeoInitRoms(&memory.rom)!=0) return -1; memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80); memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80); memory.current_vector=0; convert_all_tile(&memory.rom); convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p); if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage); return 0; }
+int GnGeoCoreInitRoms(void) {
+ if(GnGeoInitRoms(&memory.rom)!=0) return -1;
+ memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80);
+ memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80);
+ memory.current_vector=0;
+#ifdef GNGEO_CI_CPU_TRACE
+ fprintf(stderr,
+  "GNGEO_VECTOR game=%02x%02x%02x%02x%02x%02x%02x%02x bios=%02x%02x%02x%02x%02x%02x%02x%02x cpu=%02x%02x%02x%02x%02x%02x%02x%02x\\n",
+  memory.game_vector[0],memory.game_vector[1],memory.game_vector[2],memory.game_vector[3],
+  memory.game_vector[4],memory.game_vector[5],memory.game_vector[6],memory.game_vector[7],
+  memory.rom.bios_m68k.p[0],memory.rom.bios_m68k.p[1],memory.rom.bios_m68k.p[2],memory.rom.bios_m68k.p[3],
+  memory.rom.bios_m68k.p[4],memory.rom.bios_m68k.p[5],memory.rom.bios_m68k.p[6],memory.rom.bios_m68k.p[7],
+  memory.rom.cpu_m68k.p[0],memory.rom.cpu_m68k.p[1],memory.rom.cpu_m68k.p[2],memory.rom.cpu_m68k.p[3],
+  memory.rom.cpu_m68k.p[4],memory.rom.cpu_m68k.p[5],memory.rom.cpu_m68k.p[6],memory.rom.cpu_m68k.p[7]);
+#endif
+ convert_all_tile(&memory.rom);
+ convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p);
+ if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage);
+ return 0;
+}
 
 void GnGeoCoreSetInput(uint8_t p1,uint8_t p2,uint8_t start,uint8_t coin,uint8_t unused) { (void)unused; memory.intern_p1=p1; memory.intern_p2=p2; memory.intern_start=start; memory.intern_coin=coin; }
 
