@@ -100,8 +100,6 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo)
  memory.ng_lo=lo;
  memory.fix_game_usage=memory.rom.gfix_usage.p;
  memory.nb_of_tiles=memory.rom.tiles.size>>7;
- memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80);
- memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80);
  conf.system=SYS_ARCADE; conf.country=CTY_EUROPE; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
 }
 
