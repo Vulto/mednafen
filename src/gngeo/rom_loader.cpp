@@ -234,47 +234,69 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
     return true;
 }
 
+static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &data)
+{
+    if(!gf || !gf->outside.vfs || gf->outside.fbase.empty()) return false;
+
+    std::string path = gf->outside.dir.empty() ? "gngeo_data.zip" :
+        gf->outside.dir + "/gngeo_data.zip";
+    std::unique_ptr<Mednafen::ArchiveReader> archive(
+        Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
+    if(!archive) return false;
+
+    std::string name = "rom/" + gf->outside.fbase + ".drv";
+    std::unique_ptr<Mednafen::Stream> stream;
+    try {
+        stream.reset(archive->open(name, Mednafen::VirtualFS::MODE_READ));
+    } catch(const Mednafen::MDFN_Error&) {}
+
+    if(!stream) {
+        std::string lower = gf->outside.fbase;
+        for(char &ch : lower)
+            ch = (char)std::tolower((unsigned char)ch);
+        if(lower != gf->outside.fbase) {
+            try {
+                stream.reset(archive->open("rom/" + lower + ".drv",
+                    Mednafen::VirtualFS::MODE_READ));
+            } catch(const Mednafen::MDFN_Error&) {}
+        }
+    }
+    if(!stream) return false;
+
+    uint64 size = stream->size();
+    if(size == 0 || size > 16384) return false;
+    data.resize((size_t)size);
+    try {
+        if(stream->read(data.data(), size) != size) return false;
+    } catch(const Mednafen::MDFN_Error&) {
+        return false;
+    }
+    return true;
+}
+
+bool Mednafen::GnGeoHasDriver(Mednafen::GameFile *gf)
+{
+    if(!gf || !gf->outside.vfs || gf->outside.fbase.empty()) return false;
+
+    Uint32 size = 0;
+    if(GnGeoFindDriver(gf->outside.fbase.c_str(), &size) != nullptr && size != 0)
+        return true;
+
+    std::string lower = gf->outside.fbase;
+    for(char &ch : lower)
+        ch = (char)std::tolower((unsigned char)ch);
+    if(lower != gf->outside.fbase &&
+       GnGeoFindDriver(lower.c_str(), &size) != nullptr && size != 0)
+        return true;
+
+    std::vector<Uint8> driver;
+    return GnGeoLoadExternalDriver(gf, driver);
+}
+
 bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system, COUNTRY country)
 {
     memset(roms, 0, sizeof(*roms));
     if(!gf || !gf->vfs || !gf->outside.vfs) return false;
-
-    auto LoadExternalDriver = [&](std::vector<Uint8> &data) -> bool {
-        std::string path = gf->outside.dir.empty() ? "gngeo_data.zip" :
-            gf->outside.dir + "/gngeo_data.zip";
-        std::unique_ptr<Mednafen::ArchiveReader> archive(
-            Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
-        if(!archive) return false;
-
-        std::string name = "rom/" + gf->outside.fbase + ".drv";
-        std::unique_ptr<Mednafen::Stream> stream;
-        try {
-            stream.reset(archive->open(name, Mednafen::VirtualFS::MODE_READ));
-        } catch(const Mednafen::MDFN_Error&) {}
-
-        if(!stream) {
-            std::string lower = gf->outside.fbase;
-            for(char &ch : lower)
-                ch = (char)std::tolower((unsigned char)ch);
-            if(lower != gf->outside.fbase) {
-                try {
-                    stream.reset(archive->open("rom/" + lower + ".drv",
-                        Mednafen::VirtualFS::MODE_READ));
-                } catch(const Mednafen::MDFN_Error&) {}
-            }
-        }
-        if(!stream) return false;
-
-        uint64 size = stream->size();
-        if(size == 0 || size > 16384) return false;
-        data.resize((size_t)size);
-        try {
-            if(stream->read(data.data(), size) != size) return false;
-        } catch(const Mednafen::MDFN_Error&) {
-            return false;
-        }
-        return true;
-    };
 
     Uint32 drv_size=0;
     std::vector<Uint8> external_driver;
@@ -287,7 +309,7 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
             drv_data=(const Uint8*)GnGeoFindDriver(lower.c_str(),&drv_size);
     }
     if(!drv_data) {
-        if(!LoadExternalDriver(external_driver)) return false;
+        if(!GnGeoLoadExternalDriver(gf, external_driver)) return false;
         drv_data=external_driver.data();
         drv_size=(Uint32)external_driver.size();
     }
