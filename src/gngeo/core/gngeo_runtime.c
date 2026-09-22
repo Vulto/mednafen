@@ -147,7 +147,7 @@ unsigned GnGeoCoreGenerateAudio(int16_t *out,unsigned frames)
  if((GnGeoAudioCalls%60)==0) {
   unsigned nonzero=0;
   for(unsigned i=0;i<n*2;i++) if(play_buffer[i]) nonzero++;
-  printf("GNGEO_AUDIO call=%u frames=%u nonzero=%u\\n",GnGeoAudioCalls,n,nonzero);
+  fprintf(stderr,"GNGEO_AUDIO call=%u frames=%u nonzero=%u\\n",GnGeoAudioCalls,n,nonzero);
  }
 #endif
  return n;
