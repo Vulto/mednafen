@@ -46,7 +46,8 @@ jobs:
           export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-home"
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware" "$TEST_DIR"
-          curl -fL --retry 3 -o "$TEST_DIR/kof2003.zip" https://bda.retroroms.net/downloads/hbmame/currentroms/kof2003.zip
+          curl -fL --retry 3 --connect-timeout 15 --max-time 180 -o "$TEST_DIR/kof2003.zip" https://archive.org/download/neo-geo-aes-romset/kof2003.zip
+          test "$(sha1sum "$TEST_DIR/kof2003.zip" | awk '{print $1}')" = "f8b9d5a5166746f84ff424baefd0b95c99646ec3"
           unzip -t "$TEST_DIR/kof2003.zip" >/dev/null
           unzip -p "$TEST_DIR/kof2003.zip" 000-lo.lo > "$TEST_DIR/000-lo.lo"
           unzip -p "$TEST_DIR/kof2003.zip" sp-s2.sp1 > "$TEST_DIR/sp-s2.sp1"
