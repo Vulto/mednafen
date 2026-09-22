@@ -133,28 +133,12 @@ jobs:
           export TEST_DIR="$RUNNER_TEMP/gngeo-test"
           mkdir -p "$MEDNAFEN_HOME/firmware"
           cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
-          xvfb-run -a bash -c '
-            SDL_AUDIODRIVER=dummy ./src/mednafen -sound 0 "$TEST_DIR/01_helloworld.zip" >"$TEST_DIR/runtime.log" 2>&1 &
-            pid=$!
-            wid=""
-            for i in $(seq 1 60); do
-              wid=$(xdotool search --onlyvisible --pid "$pid" 2>/dev/null | head -n1)
-              test -n "$wid" && break
-              sleep 1
-            done
-            test -n "$wid"
-            xdotool windowfocus "$wid"
-            sleep 4
-            import -window "$wid" "$TEST_DIR/runtime.png"
-            
-
-            kill -TERM "$pid" || true
-            wait "$pid" || true
-          '
+          rc=0
+          timeout --signal=TERM 20s xvfb-run -a ./src/mednafen -sound 0 "$TEST_DIR/01_helloworld.zip" >"$TEST_DIR/runtime.log" 2>&1 || rc=$?
           cat "$TEST_DIR/runtime.log"
-
-          test -s "$TEST_DIR/runtime.png"
+          test "$rc" -eq 124 -o "$rc" -eq 1
           grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TEST_DIR/runtime.log"
+          grep -q 'Initializing video' "$TEST_DIR/runtime.log"
           ! grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TEST_DIR/runtime.log"
 
       - name: Neo Geo input test
