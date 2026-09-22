@@ -45,7 +45,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xauth xdotool zip ccache git rsync imagemagick sox libsox-fmt-mp3
+          sudo apt-get install -y autoconf automake autopoint gettext libtool pkg-config build-essential libasound2-dev libasound2t64 libjack-jackd2-dev libsamplerate0-dev zlib1g-dev libsdl2-dev libflac-dev liblzo2-dev libzstd-dev software-properties-common xvfb xauth xdotool zip ccache git rsync imagemagick sox libsox-fmt-mp3 gdb binutils
           sudo add-apt-repository -y ppa:dciabrin/ngdevkit
           sudo apt-get update
           sudo apt-get install -y ngdevkit ngdevkit-gngeo
@@ -161,6 +161,37 @@ jobs:
           cp "$EXAMPLES/07-attract-and-game/build/rom/neogeo.zip" "$RUNNER_TEMP/neo-homebrew/neogeo.zip"
           cp "$EXAMPLES/06-sound-adpcma/build/rom/06_sound_adpcma.zip" "$RUNNER_TEMP/neo-homebrew/"
           cp "$EXAMPLES/06-sound-adpcma/build/rom/gngeo_data.zip" "$RUNNER_TEMP/neo-homebrew/06_sound_adpcma-gngeo_data.zip"
+
+      - name: Neo Geo 68000 GDB diagnostic
+        if: always()
+        continue-on-error: true
+        run: |
+          export MEDNAFEN_HOME="$RUNNER_TEMP/mednafen-gdb-home"
+          export TEST_DIR="$RUNNER_TEMP/gngeo-test"
+          mkdir -p "$MEDNAFEN_HOME/firmware" "$RUNNER_TEMP/gngeo-gdb"
+          cp "$RUNNER_TEMP/mednafen-home/firmware/neogeo.zip" "$MEDNAFEN_HOME/firmware/neogeo.zip"
+          cat >"$RUNNER_TEMP/gngeo-gdb/gdb.cmd" <<'EOF'
+set pagination off
+set confirm off
+handle SIGPIPE nostop noprint pass
+run
+printf "\n--- THREAD BACKTRACE ---\n"
+thread apply all bt full
+printf "\n--- REGISTERS ---\n"
+info registers
+printf "\n--- INSTRUCTIONS ---\n"
+x/24i $pc-32
+printf "\n--- SHARED LIBRARIES ---\n"
+info sharedlibrary
+quit
+EOF
+          set +e
+          DISPLAY=:99 SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1             gdb -q -batch -x "$RUNNER_TEMP/gngeo-gdb/gdb.cmd"             --args ./src/mednafen -sound 0 "$TEST_DIR/07_attract_and_game.zip"             >"$RUNNER_TEMP/gngeo-gdb/gdb.log" 2>&1
+          status=$?
+          set -e
+          echo "GDB_STATUS=$status" | tee "$RUNNER_TEMP/gngeo-gdb/status.log"
+          cat "$RUNNER_TEMP/gngeo-gdb/gdb.log"
+          grep -E 'GNGEO_(LOAD|CORE|68K|FRAME|INPUT|AUDIO)' "$RUNNER_TEMP/gngeo-gdb/gdb.log"             >"$RUNNER_TEMP/gngeo-gdb/trace.log" || true
 
       - name: Neo Geo homebrew runtime test
         run: |
