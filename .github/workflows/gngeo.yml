@@ -268,7 +268,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gngeo-homebrew-diagnostics-${{ github.run_id }}
+          name: gngeo-diagnostics-${{ github.run_id }}
           path: ${{ runner.temp }}/gngeo-diagnostics
           if-no-files-found: warn
       - name: GnGeo source audit
@@ -291,5 +291,6 @@ jobs:
         if: always()
         run: |
           mkdir -p artifacts
-          cp src/mednafen artifacts/mednafen-gngeo
+          test -x src/mednafen/mednafen
+          cp src/mednafen/mednafen artifacts/mednafen-gngeo
           tar -czf artifacts/mednafen-gngeo-build.tar.gz artifacts/mednafen-gngeo
