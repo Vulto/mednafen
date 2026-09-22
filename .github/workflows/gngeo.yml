@@ -233,10 +233,12 @@ jobs:
             wait "$pid" || true
           '
           cat "$TEST_DIR/state.log"
-          test "$(grep -c 'GNGEO_STATE save' "$TEST_DIR/state.log")" -ge 1
-          test "$(grep -c 'GNGEO_STATE load' "$TEST_DIR/state.log")" -ge 1
-          test "$(grep -c 'GNGEO_FRAME' "$TEST_DIR/state.log")" -ge 8
-          test "$(grep 'GNGEO_FRAME' "$TEST_DIR/state.log" | sed -E 's/.*hash=//' | sort -u | wc -l)" -ge 3
+          test "$(grep -c 'GNGEO_STATE save size=' "$TEST_DIR/state.log")" -ge 1
+          test "$(grep -c 'GNGEO_STATE load size=' "$TEST_DIR/state.log")" -ge 1
+          save_hash="$(grep 'GNGEO_STATE save size=' "$TEST_DIR/state.log" | head -n1 | sed -E 's/.*hash=//')"
+          load_hash="$(grep 'GNGEO_STATE load size=' "$TEST_DIR/state.log" | head -n1 | sed -E 's/.*hash=//')"
+          test -n "$save_hash"
+          test "$save_hash" = "$load_hash"
 
       - name: Neo Geo gameplay video test
         run: |
