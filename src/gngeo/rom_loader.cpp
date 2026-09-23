@@ -234,6 +234,7 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
 
     if(roms->bios_m68k.p == nullptr)
     {
+        bool using_unibios = false;
         const char *romfile = "sp-s2.sp1";
         Uint32 bios_crc = 0x9036d879;
         if(system == SYS_UNIBIOS) { romfile = "uni-bios.rom"; bios_crc = 0; }
@@ -242,6 +243,7 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         else if(country == CTY_USA) { romfile = "usa_2slt.bin"; bios_crc = 0xe72943de; }
         else if(country == CTY_ASIA) { romfile = "asia-s3.rom"; bios_crc = 0x91b64be3; }
         std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, bios_crc);
+        using_unibios = stream != nullptr && system == SYS_UNIBIOS;
         if(!stream && system == SYS_UNIBIOS)
         {
             romfile = "sp-s2.sp1";
@@ -254,7 +256,7 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_m68k, size, REGION_MAIN_CPU_BIOS) != 0) return false;
         if(stream->read(roms->bios_m68k.p, size) != size) return false;
-        if(system == SYS_UNIBIOS)
+        if(using_unibios)
         {
             for(Uint32 i = 0; i + 1 < size; i += 2)
             {
