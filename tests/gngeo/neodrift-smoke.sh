@@ -40,6 +40,7 @@ fi
 
 grep -q 'Using module: gngeo(Neo Geo (GnGeo))' "$TestDir/runtime.log"
 grep -q 'Initializing video' "$TestDir/runtime.log"
+grep -q 'Neo Geo' "$TestDir/runtime.log"
 
 if grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unhandled exception|missing ROM|Invalid instruction' "$TestDir/runtime.log"; then
     echo "Neo Geo runtime test found a fatal diagnostic." >&2
@@ -47,3 +48,4 @@ if grep -Eiq 'segmentation fault|assertion failed|unable to load|fatal error|unh
 fi
 
 echo "Neo Drift Out remained running in the Mednafen GnGeo core for 30 seconds."
+echo "Runtime log: $TestDir/runtime.log"
