@@ -433,7 +433,7 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     roms->info.flags = 0;
     if(!roms->info.name || !roms->info.longname) { GnGeoFreeRoms(roms); return false; }
 
-    auto Fail = [&]() -> bool { GnGeoFreeRoms(roms); return false; };
+    auto Fail = [&]() -> bool { fprintf(stderr, "GnGeo loader: generic failure\n"); GnGeoFreeRoms(roms); return false; };
     if(GnGeoAllocateRegion(&roms->cpu_m68k, drv_def.romsize[REGION_MAIN_CPU_CARTRIDGE], REGION_MAIN_CPU_CARTRIDGE) != 0) return Fail();
     if(drv_def.romsize[REGION_AUDIO_CPU_CARTRIDGE] == 0 && drv_def.romsize[REGION_AUDIO_CPU_ENCRYPTED] != 0)
     {
