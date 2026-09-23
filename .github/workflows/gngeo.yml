@@ -68,6 +68,13 @@ jobs:
         run: |
           make -j"$(nproc)"
 
+      - name: Prepare GnGeo data
+        run: |
+          git clone --depth 1 --branch gngeo https://github.com/Vulto/gngeo "$RUNNER_TEMP/gngeo-reference"
+          test -f "$RUNNER_TEMP/gngeo-reference/gngeo.dat/gngeo_data.zip"
+          unzip -Z1 "$RUNNER_TEMP/gngeo-reference/gngeo.dat/gngeo_data.zip" | grep -q 'rom/kof2003.drv'
+          cp "$RUNNER_TEMP/gngeo-reference/gngeo.dat/gngeo_data.zip" "$RUNNER_TEMP/gngeo_data.zip"
+
       - name: GnGeo source audit
         if: always()
         run: |
@@ -97,4 +104,12 @@ jobs:
         with:
           name: mednafen-gngeo-${{ github.sha }}
           path: artifacts/mednafen-gngeo
+          if-no-files-found: error
+
+      - name: Upload GnGeo data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gngeo-data-${{ github.sha }}
+          path: ${{ runner.temp }}/gngeo_data.zip
           if-no-files-found: error
