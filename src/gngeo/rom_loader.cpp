@@ -150,6 +150,24 @@ static bool GnGeoLoadRegion(Mednafen::ArchiveReader *archive, GAME_ROMS *roms, i
             size -= chunk;
         }
     }
+    else if(region == REGION_MAIN_CPU_CARTRIDGE && dest == 2 && size == 0x400000 && target->size >= 0x800000)
+    {
+        std::vector<Uint8> buffer(size);
+        if(stream->read(buffer.data(), size) != size) return false;
+        for(Uint32 w = size / 2; w != 0; w--)
+        {
+            Uint8 *srcp = target->p + (w - 1) * 2;
+            Uint8 *dstp = target->p + (w - 1) * 4;
+            dstp[0] = srcp[0];
+            dstp[1] = srcp[1];
+        }
+        for(Uint32 w = 0; w < size / 2; w++)
+        {
+            Uint8 *dstp = target->p + w * 4 + 2;
+            dstp[0] = buffer[w * 2 + 0];
+            dstp[1] = buffer[w * 2 + 1];
+        }
+    }
     else
     {
         if(target->size < dest + size) return false;
