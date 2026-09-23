@@ -93,6 +93,8 @@ int GnGeoCoreInitRoms(void) {
  convert_all_tile(&memory.rom);
  convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p);
  if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage);
+ for(Uint32 i=0;i+1<memory.rom.cpu_m68k.size;i+=2){ Uint8 t=memory.rom.cpu_m68k.p[i]; memory.rom.cpu_m68k.p[i]=memory.rom.cpu_m68k.p[i+1]; memory.rom.cpu_m68k.p[i+1]=t; }
+ for(Uint32 i=0;i+1<memory.rom.bios_m68k.size;i+=2){ Uint8 t=memory.rom.bios_m68k.p[i]; memory.rom.bios_m68k.p[i]=memory.rom.bios_m68k.p[i+1]; memory.rom.bios_m68k.p[i+1]=t; }
  return 0;
 }
 
