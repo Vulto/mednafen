@@ -156,6 +156,16 @@ void (*mem68k_store_word[0x1000]) (Uint32 addr, Uint16 data);
 void (*mem68k_store_long[0x1000]) (Uint32 addr, Uint32 data);
 
 
+static void swap_memory(Uint8 *mem, Uint32 length)
+{
+    Uint32 i;
+    for(i = 0; i < length; i += 2) {
+        Uint8 t = mem[i];
+        mem[i] = mem[i + 1];
+        mem[i + 1] = t;
+    }
+}
+
 void bankswitcher_init(void)
 {
     mem68k_def[2].fetch_byte = mem68k_fetch_bk_normal_byte;
@@ -240,6 +250,11 @@ void cpu_68k_init(void)
 {
 
     cpu68k_clearcache();
+
+    swap_memory(memory.rom.cpu_m68k.p, memory.rom.cpu_m68k.size);
+    if(memory.rom.bios_m68k.p[0] == 0x10)
+        swap_memory(memory.rom.bios_m68k.p, memory.rom.bios_m68k.size);
+    swap_memory(memory.game_vector, 0x80);
 
     cpu68k_ram = memory.ram;
     cpu68k_rom = memory.rom.cpu_m68k.p;
