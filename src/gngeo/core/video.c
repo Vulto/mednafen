@@ -550,7 +550,7 @@ void draw_screen(void) {
 				}
 			}
 
-			if (tileno > memory.nb_of_tiles) {
+			if (tileno >= memory.nb_of_tiles) {
 				//printf("Tno %04x Tat %04x %d\n",tileno,tileatr,memory.nb_of_tiles);
 				continue;
 			}
