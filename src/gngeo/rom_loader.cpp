@@ -208,16 +208,6 @@ static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveRead
         return nullptr;
     }
 
-    for(size_t i = 0; i < archive->num_files(); i++)
-    {
-        if(expected_size != 0 && archive->get_file_size(i) != expected_size) continue;
-        try
-        {
-            std::unique_ptr<Mednafen::Stream> stream(archive->open(i));
-            if(stream && (expected_crc == 0 || GnGeoCheckCrc(stream.get(), expected_crc))) return stream;
-        }
-        catch(const Mednafen::MDFN_Error&) {}
-    }
     return nullptr;
 }
 
