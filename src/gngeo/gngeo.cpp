@@ -21,7 +21,10 @@ static const IDIISG IDII = {
 static const std::vector<InputDeviceInfoStruct> InputDeviceInfo = {{ "gamepad", "Neo Geo Controller", "", IDII, 0 }};
 static const std::vector<InputPortInfoStruct> PortInfo = {{"p1","Player 1",InputDeviceInfo,"gamepad"},{"p2","Player 2",InputDeviceInfo,"gamepad"}};
 static const FileExtensionSpecStruct KnownExtensions[]={{".zip",0,gettext_noop("Neo Geo arcade ROM archive")},{NULL,0,NULL}};
-static const MDFNSetting GnGeoSettings[]={ { NULL } };
+static const MDFNSetting GnGeoSettings[]={
+ { "gngeo.bios", MDFNSF_EMU_STATE | MDFNSF_CAT_PATH, gettext_noop("Path to the Neo Geo BIOS archive. Use uni-bios-40.zip (or another archive containing uni-bios.rom) to boot Universe BIOS."), NULL, MDFNST_STRING, "neogeo.zip" },
+ { NULL }
+};
 static uint8 *InputP1,*InputP2;
 static std::vector<uint8> StateBlob;
 static unsigned CoinPulseFrames;
@@ -59,11 +62,13 @@ static void Load(GameFile *gf)
  memset(&GameRoms,0,sizeof(GameRoms));
  try
  {
-  if(!GnGeoLoadRomSet(gf,&GameRoms,SYS_ARCADE,CTY_EUROPE)) throw MDFN_Error(ENOENT,_("Unable to load Neo Geo ROM set."));
+  const std::string bios_archive = MDFN_GetSettingS("gngeo.bios");
+  const SYSTEM system = (bios_archive.empty() || bios_archive == "neogeo.zip") ? SYS_ARCADE : SYS_UNIBIOS;
+  if(!GnGeoLoadRomSet(gf,&GameRoms,system,CTY_EUROPE)) throw MDFN_Error(ENOENT,_("Unable to load Neo Geo ROM set."));
   if(!GnGeoLoadBiosLo(gf)) throw MDFN_Error(ENOENT,_("Unable to load 000-lo.lo BIOS."));
   size_t lo_size=0; uint8 *lo=GnGeoGetBiosLo(&lo_size);
   if(!lo || lo_size<0x10000) throw MDFN_Error(ENOENT,_("Unable to load 000-lo.lo BIOS."));
-  GnGeoCoreSetRoms(&GameRoms,lo,SYS_ARCADE,CTY_EUROPE);
+  GnGeoCoreSetRoms(&GameRoms,lo,system,CTY_EUROPE);
   if(GnGeoCoreInitRoms()!=0) throw MDFN_Error(EINVAL,_("Unable to initialize Neo Geo ROM set."));
   init_neo();
   setup_misc_patch(GameRoms.info.name);
