@@ -415,11 +415,6 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
             game_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
         } catch(const Mednafen::MDFN_Error&) {}
     }
-    if(!game_archive && gf->stream) {
-        try {
-            game_archive.reset(Mednafen::ArchiveReader::Open(gf->stream));
-        } catch(const Mednafen::MDFN_Error&) {}
-    }
     if(!game_archive) return Fail();
 
     std::unique_ptr<Mednafen::ArchiveReader> parent_archive;
