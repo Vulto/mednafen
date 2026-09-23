@@ -390,8 +390,6 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     std::vector<Uint8> external_driver;
     std::string driver_base = GnGeoDriverBase(gf->outside.fbase);
     const Uint8 *drv_data=(const Uint8*)GnGeoFindDriver(gf->outside.fbase.c_str(),&drv_size);
-    if(!drv_data && driver_base != gf->outside.fbase)
-        drv_data=(const Uint8*)GnGeoFindDriver(driver_base.c_str(),&drv_size);
     if(!drv_data) {
         std::string lower = driver_base;
         for(char &ch : lower)
