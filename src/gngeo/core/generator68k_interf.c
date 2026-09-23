@@ -267,10 +267,13 @@ void cpu_68k_init(void)
 int cpu_68k_run(Uint32 nb_cycle)
 {
     static int n;
-    n = reg68k_external_execute(nb_cycle);
     static int dbg_runs;
     if(dbg_runs < 32) {
-        fprintf(stderr, "GnGeo 68K PC=%06x\n", (unsigned)regs.pc);
+        fprintf(stderr, "GnGeo 68K PRE PC=%08x\n", (unsigned)regs.pc);
+    }
+    n = reg68k_external_execute(nb_cycle);
+    if(dbg_runs < 32) {
+        fprintf(stderr, "GnGeo 68K POST PC=%08x\n", (unsigned)regs.pc);
         dbg_runs++;
     }
     /*
