@@ -242,16 +242,14 @@ LONG_FETCH(mem68k_fetch_ram)
 /**** CPU ****/
 Uint8 mem68k_fetch_cpu_byte(Uint32 addr) {
     addr &= 0xFFFFF;
-    if(memory.current_vector == 0 && addr < memory.rom.bios_m68k.size)
-        return READ_BYTE_ROM(memory.rom.bios_m68k.p + addr);
-    return READ_BYTE(memory.rom.cpu_m68k.p + (addr ^ 1));
+
+    return (READ_BYTE_ROM(memory.rom.cpu_m68k.p + addr));
 }
 
 Uint16 mem68k_fetch_cpu_word(Uint32 addr) {
     addr &= 0xFFFFF;
-    if(memory.current_vector == 0 && addr + 1 < memory.rom.bios_m68k.size)
-        return READ_WORD_ROM(memory.rom.bios_m68k.p + addr);
-    return READ_WORD(memory.rom.cpu_m68k.p + addr);
+
+    return (READ_WORD_ROM(memory.rom.cpu_m68k.p + addr));
 }
 
 LONG_FETCH(mem68k_fetch_cpu)
@@ -260,12 +258,12 @@ LONG_FETCH(mem68k_fetch_cpu)
 /**** BIOS ****/
 Uint8 mem68k_fetch_bios_byte(Uint32 addr) {
     addr &= 0x1FFFF;
-    return READ_BYTE(memory.rom.bios_m68k.p + (addr ^ 1));
+    return (READ_BYTE_ROM(memory.rom.bios_m68k.p + addr));
 }
 
 Uint16 mem68k_fetch_bios_word(Uint32 addr) {
     addr &= 0x1FFFF;
-    return READ_WORD(memory.rom.bios_m68k.p + addr);
+    return (READ_WORD_ROM(memory.rom.bios_m68k.p + addr));
 }
 
 LONG_FETCH(mem68k_fetch_bios)
@@ -855,7 +853,7 @@ Uint8 mem68k_fetch_bk_normal_byte(Uint32 addr) {
         }
     }
     addr &= 0xFFFFF;
-    return READ_BYTE(memory.rom.cpu_m68k.p + bankaddress + (addr ^ 1));
+    return (READ_BYTE_ROM(memory.rom.cpu_m68k.p + bankaddress + addr));
 }
 
 Uint16 mem68k_fetch_bk_normal_word(Uint32 addr) {
@@ -872,7 +870,7 @@ Uint16 mem68k_fetch_bk_normal_word(Uint32 addr) {
         }
     }
     addr &= 0xFFFFF;
-    return READ_WORD(memory.rom.cpu_m68k.p + bankaddress + addr);
+    return (READ_WORD_ROM(memory.rom.cpu_m68k.p + bankaddress + addr));
 }
 
 LONG_FETCH(mem68k_fetch_bk_normal)
