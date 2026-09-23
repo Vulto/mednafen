@@ -30,14 +30,26 @@ static void SetInput(unsigned port,const char *type,uint8 *ptr){ if(!strcmp(type
 
 static void ApplyInput(){
  uint8 p1=0xff,p2=0xff,s=0x8f,c=7;
- auto apply=[](uint8 *p,uint8 &v){if(!p)return; if(p[0]&&!p[1])v&=0xfe; if(p[1]&&!p[0])v&=0xfd; if(p[2]&&!p[3])v&=0xfb; if(p[3]&&!p[2])v&=0xf7; if(p[4])v&=0xef;if(p[5])v&=0xdf;if(p[6])v&=0xbf;if(p[7])v&=0x7f;};
+ auto apply=[](uint8 *p,uint8 &v){
+  if(!p)return;
+  auto pressed=[p](unsigned bit){ return (p[bit>>3] & (1U << (bit & 7))) != 0; };
+  if(pressed(0)&&!pressed(1))v&=0xfe;
+  if(pressed(1)&&!pressed(0))v&=0xfd;
+  if(pressed(2)&&!pressed(3))v&=0xfb;
+  if(pressed(3)&&!pressed(2))v&=0xf7;
+  if(pressed(4))v&=0xef;
+  if(pressed(5))v&=0xdf;
+  if(pressed(6))v&=0xbf;
+  if(pressed(7))v&=0x7f;
+ };
  apply(InputP1,p1); apply(InputP2,p2);
- if(InputP1&&InputP1[8])s&=0xfd;
- if(InputP2&&InputP2[8])s&=0xf7;
- if(InputP1&&InputP1[9])s&=0xfe;
- if(InputP2&&InputP2[9])s&=0xfb;
- if(InputP1&&InputP1[10])c&=0x6;
- if(InputP2&&InputP2[10])c&=0x5;
+ auto pressed=[](uint8 *p,unsigned bit){ return p && (p[bit>>3] & (1U << (bit & 7))); };
+ if(pressed(InputP1,8))s&=0xfd;
+ if(pressed(InputP2,8))s&=0xf7;
+ if(pressed(InputP1,9))s&=0xfe;
+ if(pressed(InputP2,9))s&=0xfb;
+ if(pressed(InputP1,10))c&=0x6;
+ if(pressed(InputP2,10))c&=0x5;
  if(CoinPulseFrames) { c&=0x6; CoinPulseFrames--; }
  GnGeoCoreSetInput(p1,p2,s,c,0);
 }
