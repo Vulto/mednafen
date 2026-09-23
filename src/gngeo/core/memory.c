@@ -242,14 +242,16 @@ LONG_FETCH(mem68k_fetch_ram)
 /**** CPU ****/
 Uint8 mem68k_fetch_cpu_byte(Uint32 addr) {
     addr &= 0xFFFFF;
-
-    return (READ_BYTE_ROM(memory.rom.cpu_m68k.p + addr));
+    if(memory.current_vector == 0 && addr < memory.rom.bios_m68k.size)
+        return READ_BYTE_ROM(memory.rom.bios_m68k.p + addr);
+    return READ_BYTE_ROM(memory.rom.cpu_m68k.p + addr);
 }
 
 Uint16 mem68k_fetch_cpu_word(Uint32 addr) {
     addr &= 0xFFFFF;
-
-    return (READ_WORD_ROM(memory.rom.cpu_m68k.p + addr));
+    if(memory.current_vector == 0 && addr + 1 < memory.rom.bios_m68k.size)
+        return READ_WORD_ROM(memory.rom.bios_m68k.p + addr);
+    return READ_WORD_ROM(memory.rom.cpu_m68k.p + addr);
 }
 
 LONG_FETCH(mem68k_fetch_cpu)
