@@ -93,6 +93,9 @@ jobs:
           test -f src/gngeo/gngeo.cpp
           test -f src/gngeo/core/gngeo_runtime.c
           test -f src/gngeo/core/gngeo_state.c
+          grep -q 'swap_memory(memory.rom.cpu_m68k.p' src/gngeo/core/generator68k_interf.c
+          grep -q 'swap_memory(memory.game_vector' src/gngeo/core/generator68k_interf.c
+          ! grep -q 'std::swap(roms->bios_m68k.p' src/gngeo/rom_loader.cpp
           ! grep -RIn --exclude='*.md' -E '#[[:space:]]*include[[:space:]]*[<"]SDL' src/gngeo
 
       - name: Core symbol audit
