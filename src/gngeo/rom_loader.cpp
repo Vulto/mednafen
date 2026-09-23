@@ -269,6 +269,15 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
     return true;
 }
 
+static std::string GnGeoDriverBase(const std::string &base)
+{
+    std::string normalized = base;
+    size_t suffix = normalized.rfind('(');
+    if(suffix != std::string::npos && !normalized.empty() && normalized.back() == ')')
+        normalized.resize(suffix);
+    return normalized;
+}
+
 static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &data)
 {
     if(!gf || !gf->outside.vfs || gf->outside.fbase.empty()) return false;
@@ -281,10 +290,7 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
         archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, "gngeo_data.zip"));
     if(!archive) return false;
 
-    std::string driver_base = gf->outside.fbase;
-    size_t suffix = driver_base.rfind('(');
-    if(suffix != std::string::npos && !driver_base.empty() && driver_base.back() == ')')
-        driver_base.resize(suffix);
+    std::string driver_base = GnGeoDriverBase(gf->outside.fbase);
     std::string name = "rom/" + driver_base + ".drv";
     std::unique_ptr<Mednafen::Stream> stream;
     try {
@@ -359,10 +365,15 @@ bool Mednafen::GnGeoHasDriver(Mednafen::GameFile *gf)
     if(GnGeoFindDriver(gf->outside.fbase.c_str(), &size) != nullptr && size != 0)
         return true;
 
-    std::string lower = gf->outside.fbase;
+    std::string driver_base = GnGeoDriverBase(gf->outside.fbase);
+    if(driver_base != gf->outside.fbase &&
+       GnGeoFindDriver(driver_base.c_str(), &size) != nullptr && size != 0)
+        return true;
+
+    std::string lower = driver_base;
     for(char &ch : lower)
         ch = (char)std::tolower((unsigned char)ch);
-    if(lower != gf->outside.fbase &&
+    if(lower != driver_base &&
        GnGeoFindDriver(lower.c_str(), &size) != nullptr && size != 0)
         return true;
 
@@ -377,12 +388,15 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
 
     Uint32 drv_size=0;
     std::vector<Uint8> external_driver;
+    std::string driver_base = GnGeoDriverBase(gf->outside.fbase);
     const Uint8 *drv_data=(const Uint8*)GnGeoFindDriver(gf->outside.fbase.c_str(),&drv_size);
+    if(!drv_data && driver_base != gf->outside.fbase)
+        drv_data=(const Uint8*)GnGeoFindDriver(driver_base.c_str(),&drv_size);
     if(!drv_data) {
-        std::string lower = gf->outside.fbase;
+        std::string lower = driver_base;
         for(char &ch : lower)
             ch = (char)std::tolower((unsigned char)ch);
-        if(lower != gf->outside.fbase)
+        if(lower != driver_base)
             drv_data=(const Uint8*)GnGeoFindDriver(lower.c_str(),&drv_size);
     }
     if(!drv_data) {
