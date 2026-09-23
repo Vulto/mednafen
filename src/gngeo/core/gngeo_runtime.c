@@ -89,6 +89,7 @@ int GnGeoCoreInitRoms(void) {
  memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80);
  memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80);
  memory.current_vector=0;
+ fprintf(stderr,"GnGeo vector bytes: %02x %02x %02x %02x %02x %02x %02x %02x\\n",memory.rom.cpu_m68k.p[0],memory.rom.cpu_m68k.p[1],memory.rom.cpu_m68k.p[2],memory.rom.cpu_m68k.p[3],memory.rom.cpu_m68k.p[4],memory.rom.cpu_m68k.p[5],memory.rom.cpu_m68k.p[6],memory.rom.cpu_m68k.p[7]);
  convert_all_tile(&memory.rom);
  convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p);
  if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage);
