@@ -134,7 +134,7 @@ int GnGeoRunFrame(void)
  Uint32 tm=0; const Uint32 slice=200000/264; const Uint32 zslice=73333/256;
  memory.vid.irq2start=(memory.vid.irq2control&0x40)?(memory.vid.irq2pos+3)/0x180:1000;
  SkipFrame=0; current_line=0; LastLine=0;
- for(int i=0;i<256;i++){ my_timer(); }
+ for(int i=0;i<256;i++){}
  for(int i=0;i<264;i++){ tm=cpu_68k_run(slice-tm); if(UpdateScanline()) cpu_68k_interrupt(2); }
  tm=cpu_68k_run(slice-tm);
  if(LastLine<21) draw_screen(); else draw_screen_scanline(LastLine-21,262,1);
