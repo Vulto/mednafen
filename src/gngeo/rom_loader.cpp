@@ -240,6 +240,12 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         }
         if(!stream && system == SYS_ARCADE && country == CTY_EUROPE)
             stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, 0);
+        if(!stream && system == SYS_ARCADE)
+        {
+            romfile = "uni-bios.rom";
+            bios_crc = 0;
+            stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, bios_crc);
+        }
         if(!stream) return false;
         Uint32 size = (Uint32)stream->size();
         if(GnGeoAllocateRegion(&roms->bios_m68k, size, REGION_MAIN_CPU_BIOS) != 0) return false;
