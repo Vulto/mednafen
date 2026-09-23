@@ -83,6 +83,7 @@ jobs:
           test -n "$BIOS_ROM"
           mkdir -p "$HOME/.mednafen/firmware"
           cp "$BIOS_ROM" "$HOME/.mednafen/firmware/neogeo.zip"
+          cp "$RUNNER_TEMP/gngeo_data.zip" "$(dirname "$KOF98_ROM")/gngeo_data.zip"
           printf '%s
 ' "$KOF98_ROM" > "$RUNNER_TEMP/kof98-rom-path"
 
