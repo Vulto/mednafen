@@ -76,3 +76,11 @@ The Mednafen port must preserve that sequence while replacing only the I/O/front
 ## Completion criterion
 
 The core is not complete when it merely compiles or loads a ROM database. Completion requires a real Neo Geo game to boot and run inside Mednafen using Mednafen's own lifecycle and interfaces, with video, audio, input, interrupts, timing and save states working.
+
+## External Neo Geo runtime validation
+
+A real Neo Geo game can be validated without committing copyrighted ROM data. Build Mednafen with GnGeo enabled, place a legally obtained Neo Geo BIOS at `$MEDNAFEN_HOME/firmware/neogeo.zip`, and run:
+
+`tests/gngeo/neodrift-smoke.sh /path/to/neodrift.zip`
+
+The script requires the GnGeo module to remain alive for 30 seconds and rejects fatal runtime diagnostics. It does not substitute for visual, input, or audio verification; those remain manual/runtime acceptance checks.
