@@ -260,6 +260,8 @@ int cpu_68k_run(Uint32 nb_cycle)
     if(dbg_runs < 32) {
         fprintf(stderr, "GnGeo 68K PRE PC=%08x\n", (unsigned)regs.pc);
     }
+    static int trace_count;
+    if(trace_count < 40) fprintf(stderr, "GnGeo PC=%08x\\n", (unsigned)regs.pc), trace_count++;
     n = reg68k_external_execute(nb_cycle);
     if(dbg_runs < 32) {
         fprintf(stderr, "GnGeo 68K POST PC=%08x\n", (unsigned)regs.pc);
