@@ -400,7 +400,7 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
             drv_data=(const Uint8*)GnGeoFindDriver(lower.c_str(),&drv_size);
     }
     if(!drv_data) {
-        if(!GnGeoLoadExternalDriver(gf, external_driver)) return false;
+        if(!GnGeoLoadExternalDriver(gf, external_driver)) { MDFN_printf("GnGeo loader: no driver for %s\\n", gf->outside.fbase.c_str()); return false; }
         drv_data=external_driver.data();
         drv_size=(Uint32)external_driver.size();
     }
@@ -458,7 +458,7 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
             game_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
         } catch(const Mednafen::MDFN_Error&) {}
     }
-    if(!game_archive) return Fail();
+    if(!game_archive) { MDFN_printf("GnGeo loader: cannot open game archive for %s\\n", gf->outside.fbase.c_str()); return Fail(); }
 
     std::unique_ptr<Mednafen::ArchiveReader> parent_archive;
     if(drv_def.parent[0])
@@ -482,6 +482,6 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
         }
     }
     if(roms->adpcmb.size == 0) { roms->adpcmb.p = roms->adpcma.p; roms->adpcmb.size = roms->adpcma.size; }
-    if(!GnGeoLoadBios(gf, roms, system, country)) return Fail();
+    if(!GnGeoLoadBios(gf, roms, system, country)) { MDFN_printf("GnGeo loader: BIOS load failed\\n"); return Fail(); }
     return true;
 }
