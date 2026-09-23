@@ -47,11 +47,11 @@ static void Load(GameFile *gf)
  memset(&GameRoms,0,sizeof(GameRoms));
  try
  {
-  if(!GnGeoLoadRomSet(gf,&GameRoms,SYS_UNIBIOS,CTY_EUROPE)) throw MDFN_Error(ENOENT,_("Unable to load Neo Geo ROM set."));
+  if(!GnGeoLoadRomSet(gf,&GameRoms,SYS_ARCADE,CTY_EUROPE)) throw MDFN_Error(ENOENT,_("Unable to load Neo Geo ROM set."));
   if(!GnGeoLoadBiosLo(gf)) throw MDFN_Error(ENOENT,_("Unable to load 000-lo.lo BIOS."));
   size_t lo_size=0; uint8 *lo=GnGeoGetBiosLo(&lo_size);
   if(!lo || lo_size<0x10000) throw MDFN_Error(ENOENT,_("Unable to load 000-lo.lo BIOS."));
-  GnGeoCoreSetRoms(&GameRoms,lo,SYS_UNIBIOS,CTY_EUROPE);
+  GnGeoCoreSetRoms(&GameRoms,lo,SYS_ARCADE,CTY_EUROPE);
   if(GnGeoCoreInitRoms()!=0) throw MDFN_Error(EINVAL,_("Unable to initialize Neo Geo ROM set."));
   init_neo();
   setup_misc_patch(GameRoms.info.name);
