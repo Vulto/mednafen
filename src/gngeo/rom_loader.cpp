@@ -277,6 +277,8 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
         gf->outside.dir + "/gngeo_data.zip";
     std::unique_ptr<Mednafen::ArchiveReader> archive(
         Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
+    if(!archive)
+        archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, "gngeo_data.zip"));
     if(!archive) return false;
 
     std::string driver_base = gf->outside.fbase;
