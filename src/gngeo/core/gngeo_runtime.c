@@ -74,14 +74,14 @@ void GnGeoCoreShutdown(void)
  if(CoreInitialized){ YM2610_sh_stop(); CoreInitialized=0; }
 }
 
-void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo)
+void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo, SYSTEM system, COUNTRY country)
 {
  memset(&memory,0,sizeof(memory));
  memcpy(&memory.rom,r,sizeof(*r));
  memory.ng_lo=lo;
  memory.fix_game_usage=memory.rom.gfix_usage.p;
  memory.nb_of_tiles=memory.rom.tiles.size>>7;
- conf.system=SYS_ARCADE; conf.country=CTY_EUROPE; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
+ conf.system=system; conf.country=country; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
 }
 
 int GnGeoCoreInitRoms(void) {
