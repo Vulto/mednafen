@@ -196,7 +196,7 @@ static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveRead
 static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system, COUNTRY country)
 {
     const std::string bios_archive_name =
-        MDFN_GetSettingS("gngeo.bios").empty() ? "neogeo.zip" : MDFN_GetSettingS("gngeo.bios");
+        Mednafen::MDFN_GetSettingS("gngeo.bios").empty() ? "neogeo.zip" : Mednafen::MDFN_GetSettingS("gngeo.bios");
 
     std::unique_ptr<Mednafen::ArchiveReader> bios_archive(
         Mednafen::ArchiveReader::Open(&Mednafen::NVFS,
