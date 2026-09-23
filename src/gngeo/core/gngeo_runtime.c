@@ -85,17 +85,13 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo, SYSTEM system, COUNTRY country)
 }
 
 int GnGeoCoreInitRoms(void) {
- fprintf(stderr,"GnGeo BIOS before init: %02x %02x %02x %02x %02x %02x %02x %02x\\n",memory.rom.bios_m68k.p[0],memory.rom.bios_m68k.p[1],memory.rom.bios_m68k.p[2],memory.rom.bios_m68k.p[3],memory.rom.bios_m68k.p[4],memory.rom.bios_m68k.p[5],memory.rom.bios_m68k.p[6],memory.rom.bios_m68k.p[7]);
  if(GnGeoInitRoms(&memory.rom)!=0) return -1;
- fprintf(stderr,"GnGeo P 0200: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\\n",memory.rom.cpu_m68k.p[0x200],memory.rom.cpu_m68k.p[0x201],memory.rom.cpu_m68k.p[0x202],memory.rom.cpu_m68k.p[0x203],memory.rom.cpu_m68k.p[0x204],memory.rom.cpu_m68k.p[0x205],memory.rom.cpu_m68k.p[0x206],memory.rom.cpu_m68k.p[0x207],memory.rom.cpu_m68k.p[0x208],memory.rom.cpu_m68k.p[0x209],memory.rom.cpu_m68k.p[0x20a],memory.rom.cpu_m68k.p[0x20b]);
  memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80);
  memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80);
  memory.current_vector=0;
  convert_all_tile(&memory.rom);
  convert_all_char(memory.rom.game_sfix.p,memory.rom.game_sfix.size,memory.rom.gfix_usage.p);
  if(memory.rom.bios_sfix.p && memory.rom.bios_sfix.size) convert_all_char(memory.rom.bios_sfix.p,memory.rom.bios_sfix.size,memory.fix_board_usage);
- for(Uint32 i=0;i+1<memory.rom.cpu_m68k.size;i+=2){ Uint8 t=memory.rom.cpu_m68k.p[i]; memory.rom.cpu_m68k.p[i]=memory.rom.cpu_m68k.p[i+1]; memory.rom.cpu_m68k.p[i+1]=t; }
- for(Uint32 i=0;i+1<memory.rom.bios_m68k.size;i+=2){ Uint8 t=memory.rom.bios_m68k.p[i]; memory.rom.bios_m68k.p[i]=memory.rom.bios_m68k.p[i+1]; memory.rom.bios_m68k.p[i+1]=t; }
  return 0;
 }
 
