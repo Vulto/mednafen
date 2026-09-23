@@ -260,12 +260,12 @@ LONG_FETCH(mem68k_fetch_cpu)
 /**** BIOS ****/
 Uint8 mem68k_fetch_bios_byte(Uint32 addr) {
     addr &= 0x1FFFF;
-    return (READ_BYTE_ROM(memory.rom.bios_m68k.p + addr));
+    return READ_BYTE(memory.rom.bios_m68k.p + (addr ^ 1));
 }
 
 Uint16 mem68k_fetch_bios_word(Uint32 addr) {
     addr &= 0x1FFFF;
-    return (READ_WORD_ROM(memory.rom.bios_m68k.p + addr));
+    return READ_WORD(memory.rom.bios_m68k.p + addr);
 }
 
 LONG_FETCH(mem68k_fetch_bios)
