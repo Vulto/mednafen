@@ -105,6 +105,13 @@ jobs:
           unzip -Z1 "$RUNNER_TEMP/gngeo_data.zip" | grep -q 'rom/01_helloworld.drv'
           "$romtool" --build cartridge --format zip --prom "$p1" --mrom "$m1" --vrom "$v1" --srom "$s1" --crom "$c1" "$c2" --name 01_helloworld --long-name "Simple hello world" --output "$RUNNER_TEMP/01_helloworld.zip"
 
+      - name: Upload GnGeo data archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: gngeo-data-${{ github.sha }}
+          path: ${{ runner.temp }}/gngeo_data.zip
+          if-no-files-found: error
+
       - name: Prepare open source Neo Geo BIOS
         run: |
           git clone --depth 1 https://github.com/dciabrin/ngdevkit "$RUNNER_TEMP/ngdevkit"
