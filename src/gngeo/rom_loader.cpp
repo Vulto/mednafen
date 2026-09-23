@@ -195,6 +195,9 @@ static std::unique_ptr<Mednafen::Stream> GnGeoOpenBiosFile(Mednafen::ArchiveRead
 
 static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system, COUNTRY country)
 {
+    const std::string bios_archive_name =
+        MDFN_GetSettingS("gngeo.bios").empty() ? "neogeo.zip" : MDFN_GetSettingS("gngeo.bios");
+
     std::unique_ptr<Mednafen::ArchiveReader> bios_archive(
         Mednafen::ArchiveReader::Open(&Mednafen::NVFS,
             Mednafen::MDFN_MakeFName(Mednafen::MDFNMKF_FIRMWARE, 0, "neogeo.zip")));
@@ -204,6 +207,22 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         bios_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
     }
     if(!bios_archive) return false;
+
+    std::unique_ptr<Mednafen::ArchiveReader> main_bios_archive;
+    if(system == SYS_UNIBIOS)
+    {
+        main_bios_archive.reset(Mednafen::ArchiveReader::Open(
+            &Mednafen::NVFS,
+            Mednafen::MDFN_MakeFName(Mednafen::MDFNMKF_FIRMWARE, 0, bios_archive_name)));
+        if(!main_bios_archive && gf && gf->outside.vfs)
+        {
+            std::string path = gf->outside.dir.empty() ? bios_archive_name : gf->outside.dir + "/" + bios_archive_name;
+            main_bios_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
+        }
+        if(!main_bios_archive) return false;
+    }
+    else
+        main_bios_archive.reset(nullptr);
 
     if(roms->bios_sfix.p == nullptr)
     {
@@ -231,7 +250,8 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         else if(country == CTY_JAPAN) { romfile = "vs-bios.rom"; bios_crc = 0xf0e8f27d; }
         else if(country == CTY_USA) { romfile = "usa_2slt.bin"; bios_crc = 0xe72943de; }
         else if(country == CTY_ASIA) { romfile = "asia-s3.rom"; bios_crc = 0x91b64be3; }
-        std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, bios_crc);
+        Mednafen::ArchiveReader *main_archive = system == SYS_UNIBIOS ? main_bios_archive.get() : bios_archive.get();
+        std::unique_ptr<Mednafen::Stream> stream = GnGeoOpenBiosFile(main_archive, romfile, 0x20000, bios_crc);
         if(!stream && system == SYS_UNIBIOS)
         {
             romfile = "sp-s2.sp1";
