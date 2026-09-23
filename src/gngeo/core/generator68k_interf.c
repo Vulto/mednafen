@@ -268,7 +268,11 @@ int cpu_68k_run(Uint32 nb_cycle)
 {
     static int n;
     n = reg68k_external_execute(nb_cycle);
-    //printf("pc=%x\n",regs.pc);
+    static int dbg_runs;
+    if(dbg_runs < 32) {
+        fprintf(stderr, "GnGeo 68K PC=%06x\n", (unsigned)regs.pc);
+        dbg_runs++;
+    }
     /*
     pc=regs.pc;
     sr=regs.sr.sr_int;
