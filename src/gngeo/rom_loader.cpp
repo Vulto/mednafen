@@ -279,7 +279,11 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
         Mednafen::ArchiveReader::Open(gf->outside.vfs, path));
     if(!archive) return false;
 
-    std::string name = "rom/" + gf->outside.fbase + ".drv";
+    std::string driver_base = gf->outside.fbase;
+    size_t suffix = driver_base.rfind('(');
+    if(suffix != std::string::npos && !driver_base.empty() && driver_base.back() == ')')
+        driver_base.resize(suffix);
+    std::string name = "rom/" + driver_base + ".drv";
     std::unique_ptr<Mednafen::Stream> stream;
     try {
         stream.reset(archive->open(name, Mednafen::VirtualFS::MODE_READ));
@@ -321,6 +325,17 @@ static bool GnGeoLoadExternalDriver(Mednafen::GameFile *gf, std::vector<Uint8> &
             }
         }
     }
+    if(!stream && driver_base != gf->outside.fbase)
+    {
+        try { stream.reset(archive->open("rom/" + driver_base + ".drv", Mednafen::VirtualFS::MODE_READ)); }
+        catch(const Mednafen::MDFN_Error&) {}
+        if(!stream)
+        {
+            try { stream.reset(archive->open("/rom/" + driver_base + ".drv", Mednafen::VirtualFS::MODE_READ)); }
+            catch(const Mednafen::MDFN_Error&) {}
+        }
+    }
+
     if(!stream) return false;
 
     uint64 size = stream->size();
