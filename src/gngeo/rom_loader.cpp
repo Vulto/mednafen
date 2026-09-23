@@ -404,12 +404,7 @@ bool Mednafen::GnGeoLoadRomSet(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM s
     if(drv_def.romsize[REGION_AUDIO_CPU_BIOS]) { roms->info.flags |= HAS_CUSTOM_AUDIO_BIOS; if(GnGeoAllocateRegion(&roms->bios_audio, drv_def.romsize[REGION_AUDIO_CPU_BIOS], REGION_AUDIO_CPU_BIOS) != 0) return Fail(); }
     if(drv_def.romsize[REGION_FIXED_LAYER_BIOS]) { roms->info.flags |= HAS_CUSTOM_SFIX_BIOS; if(GnGeoAllocateRegion(&roms->bios_sfix, drv_def.romsize[REGION_FIXED_LAYER_BIOS], REGION_FIXED_LAYER_BIOS) != 0) return Fail(); }
     std::unique_ptr<Mednafen::ArchiveReader> game_archive;
-    if(gf->vfs) {
-        try {
-            game_archive.reset(Mednafen::ArchiveReader::Open(gf->vfs, gf->outside.fname));
-        } catch(const Mednafen::MDFN_Error&) {}
-    }
-    if(!game_archive && gf->outside.vfs) {
+    if(gf->outside.vfs) {
         std::string game_path = gf->outside.dir.empty() ? gf->outside.fbase + ".zip" : gf->outside.dir + "/" + gf->outside.fbase + ".zip";
         try {
             game_archive.reset(Mednafen::ArchiveReader::Open(gf->outside.vfs, game_path));
