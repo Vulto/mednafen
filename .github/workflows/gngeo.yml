@@ -75,6 +75,17 @@ jobs:
           unzip -Z1 "$RUNNER_TEMP/gngeo-reference/gngeo.dat/gngeo_data.zip" | grep -q 'rom/kof2003.drv'
           cp "$RUNNER_TEMP/gngeo-reference/gngeo.dat/gngeo_data.zip" "$RUNNER_TEMP/gngeo_data.zip"
 
+      - name: Prepare KOF98 runtime assets
+        run: |
+          KOF98_ROM="$(find "$GITHUB_WORKSPACE" -type f -iname 'kof98.zip' -print -quit)"
+          test -n "$KOF98_ROM"
+          BIOS_ROM="$(find "$GITHUB_WORKSPACE" -type f -iname 'neogeo.zip' -print -quit)"
+          test -n "$BIOS_ROM"
+          mkdir -p "$HOME/.mednafen/firmware"
+          cp "$BIOS_ROM" "$HOME/.mednafen/firmware/neogeo.zip"
+          printf '%s
+' "$KOF98_ROM" > "$RUNNER_TEMP/kof98-rom-path"
+
       - name: GnGeo source audit
         if: always()
         run: |
@@ -106,10 +117,14 @@ jobs:
           path: artifacts/mednafen-gngeo
           if-no-files-found: error
 
-      - name: Upload GnGeo data
+      - name: Run KOF98 runtime smoke test
+        run: |
+          ./tests/gngeo/kof98-smoke.sh "$(cat "$RUNNER_TEMP/kof98-rom-path")"
+
+      - name: Upload KOF98 runtime log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gngeo-data-${{ github.sha }}
-          path: ${{ runner.temp }}/gngeo_data.zip
-          if-no-files-found: error
+          name: gngeo-kof98-runtime-${{ github.sha }}
+          path: /tmp/mednafen-gngeo-kof98/runtime.log
+          if-no-files-found: warn
