@@ -245,7 +245,7 @@ static bool GnGeoLoadBios(Mednafen::GameFile *gf, GAME_ROMS *roms, SYSTEM system
         if(!stream && system == SYS_UNIBIOS)
         {
             romfile = "sp-s2.sp1";
-            bios_crc = 0x9036d879;
+            bios_crc = 0;
             stream = GnGeoOpenBiosFile(bios_archive.get(), romfile, 0x20000, bios_crc);
         }
         if(!stream && system == SYS_ARCADE && country == CTY_EUROPE)
