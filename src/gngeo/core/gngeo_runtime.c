@@ -81,7 +81,7 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo, SYSTEM system, COUNTRY country)
  memory.ng_lo=lo;
  memory.fix_game_usage=memory.rom.gfix_usage.p;
  memory.nb_of_tiles=memory.rom.tiles.size>>7;
- conf.system=system; conf.country=country; conf.pal=0; conf.raster=1; conf.sample_rate=AudioRate;
+ conf.system=system; conf.country=country; conf.pal=0; conf.raster=0; conf.sample_rate=AudioRate;
 }
 
 int GnGeoCoreInitRoms(void) {
@@ -131,16 +131,32 @@ static int UpdateScanline(void)
 
 int GnGeoRunFrame(void)
 {
- Uint32 tm=0; const Uint32 slice=200000/264; const Uint32 zslice=73333/256;
- memory.vid.irq2start=(memory.vid.irq2control&0x40)?(memory.vid.irq2pos+3)/0x180:1000;
- SkipFrame=0; current_line=0; LastLine=0;
+ Uint32 tm=0;
+ const Uint32 slice=200000;
+ const Uint32 scanline_slice=slice/264;
+ const Uint32 zslice=73333/256;
+
  for(int i=0;i<256;i++){ cpu_z80_run(zslice); my_timer(); }
- for(int i=0;i<264;i++){ tm=cpu_68k_run(slice-tm); if(UpdateScanline()) cpu_68k_interrupt(2); }
- tm=cpu_68k_run(slice-tm);
- if(LastLine<21) draw_screen(); else draw_screen_scanline(LastLine-21,262,1);
+
+ if(conf.raster) {
+  memory.vid.irq2start=(memory.vid.irq2control&0x40)?(memory.vid.irq2pos+3)/0x180:1000;
+  SkipFrame=0; current_line=0; LastLine=0;
+  for(int i=0;i<264;i++){ tm=cpu_68k_run(scanline_slice-tm); if(UpdateScanline()) cpu_68k_interrupt(2); }
+  tm=cpu_68k_run(scanline_slice-tm);
+  if(LastLine<21) draw_screen(); else draw_screen_scanline(LastLine-21,262,1);
+ } else {
+  tm=cpu_68k_run(slice-tm);
+  draw_screen();
+ }
+
  pd4990a_addretrace();
- if(Fc>=neogeo_frame_counter_speed){Fc=0;neogeo_frame_counter++;} Fc++;
- memory.watchdog++; if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;} cpu_68k_interrupt(1);
+ if(!(memory.vid.irq2control&0x8)) {
+  if(Fc>=neogeo_frame_counter_speed){Fc=0;neogeo_frame_counter++;}
+  Fc++;
+ }
+ memory.watchdog++;
+ if(memory.watchdog>7){cpu_68k_reset();memory.watchdog=0;}
+ cpu_68k_interrupt(1);
  return 1;
 }
 
