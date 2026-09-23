@@ -332,3 +332,11 @@ jobs:
           test -x src/mednafen
           cp src/mednafen artifacts/mednafen-gngeo
           tar -czf artifacts/mednafen-gngeo-build.tar.gz artifacts/mednafen-gngeo
+
+      - name: Upload Mednafen GnGeo binary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mednafen-gngeo-${{ github.sha }}
+          path: artifacts/mednafen-gngeo
+          if-no-files-found: error
