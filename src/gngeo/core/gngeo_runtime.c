@@ -85,6 +85,7 @@ void GnGeoCoreSetRoms(GAME_ROMS *r, Uint8 *lo, SYSTEM system, COUNTRY country)
 }
 
 int GnGeoCoreInitRoms(void) {
+ fprintf(stderr,"GnGeo BIOS before init: %02x %02x %02x %02x %02x %02x %02x %02x\\n",memory.rom.bios_m68k.p[0],memory.rom.bios_m68k.p[1],memory.rom.bios_m68k.p[2],memory.rom.bios_m68k.p[3],memory.rom.bios_m68k.p[4],memory.rom.bios_m68k.p[5],memory.rom.bios_m68k.p[6],memory.rom.bios_m68k.p[7]);
  if(GnGeoInitRoms(&memory.rom)!=0) return -1;
  memcpy(memory.game_vector,memory.rom.cpu_m68k.p,0x80);
  memcpy(memory.rom.cpu_m68k.p,memory.rom.bios_m68k.p,0x80);
